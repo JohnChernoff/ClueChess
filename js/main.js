@@ -8,7 +8,9 @@ let solution_board = [];
 let max_files = 8, max_ranks = 8;
 let hint_lvl = 5, max_hints = 5;
 let dragging = null;
-show_control = true;
+let show_control = true;
+let chk_verbose = document.getElementById("chk-verbose");
+let lab_hint = document.getElementById("lab-hint");
 
 function onLoad() {
   initBoard(puzzle_board,document.getElementById("puzzle_canvas"));
@@ -78,7 +80,7 @@ function scrollPiece(board,square,dir) {
 }
 
 function getCoords(id) {
-  let i = parseInt(id); return { x: id % max_files, y: Math.floor(id / max_ranks) };
+  return { x: id % max_files, y: Math.floor(id / max_ranks) };
 }
 
 function nextHint() {
@@ -87,16 +89,29 @@ function nextHint() {
     if (puzzle_board.squares[x][y].hint_lvl >= hint_lvl) solution_board[x][y].piece = puzzle_board.squares[x][y].piece;
     else solution_board[x][y].piece = 0;
   }
-  drawBoard(puzzle_board,true);
-  drawGridBoard(solution_board,show_control);
+  refresh();
 }
 
 function newPuzzle() {
   hint_lvl = 5;
-  setFEN(puzzle_board.squares,PUZZLE_FEN);
-  drawBoard(puzzle_board,true);
+  setFEN(puzzle_board.squares,PUZZLE_FEN); //drawBoard(puzzle_board,true);
   setFEN(solution_board,START_FEN);
+  refresh();
+}
+
+function refresh() {
+  calcBoard(puzzle_board.squares);
   drawGridBoard(solution_board,show_control);
+  lab_hint.innerText = "Hints: " + (max_hints - hint_lvl);
+}
+
+function calcBoard(squares) {
+  for (let y = 0;y < max_ranks; y++) {
+    for (let x = 0; x < max_files; x++) {
+      squares[x][y].control = getControl(x,y,squares,false);
+      squares[x][y].color = getColor(squares[x][y]);
+    }
+  }
 }
 
 function drawBoard(board,show_pieces) {
@@ -110,13 +125,6 @@ function drawBoard(board,show_pieces) {
   }
 }
 
-function drawGridBoard(squares,show_control) {
-  calcBoard(squares);
-  drawInterpolatedSquares(squares);
-  if (show_control) showGridControlNumbers(squares,puzzle_board.squares);
-  for (let y=0;y<max_ranks;y++) for (let x=0;x<max_files;x++) drawGridPiece(squares[x][y]);
-}
-
 function drawPiece(board,w,h,x,y) {
   let dx = w * x, dy = h * y, square = board.squares[x][y];
   if (square.piece > 0) board.ctx.drawImage(piece_imgs[square.piece-1].white,dx+(w/4),dy+(h/4),w/2,h/2);
@@ -125,10 +133,17 @@ function drawPiece(board,w,h,x,y) {
 
 function drawControl(board,w,h,x,y) {
   let dx = w * x, dy = h * y, square = board.squares[x][y];
-  let w2 = w/2, w4 = w/4, h2 = h/2;
+  let w4 = w/4;
   board.ctx.font = 'bold ' + w4 + 'px fixedsys';
   board.ctx.fillStyle = "yellow";
   board.ctx.fillText(""+ square.control,dx + (w4/2) ,dy + w4);
+}
+
+function drawGridBoard(squares,show_control) {
+  calcBoard(squares);
+  drawInterpolatedSquares(squares);
+  if (show_control) drawGridControlNumbers(squares,puzzle_board.squares);
+  for (let y=0;y<max_ranks;y++) for (let x=0;x<max_files;x++) drawGridPiece(squares[x][y]);
 }
 
 function drawGridPiece(square) {
@@ -137,32 +152,28 @@ function drawGridPiece(square) {
   else if (square.piece < 0) square.ctx.drawImage(piece_imgs[-square.piece-1].black,w4,h4,w2,h2);
 }
 
+function drawGridControlNumbers(squares,puzzle_squares) {
+  for (let y=0;y<max_ranks;y++) {
+    for (let x=0;x<max_files;x++) {
+      let w4 = (squares[x][y].canvas.width/4);
+      squares[x][y].ctx.font = 'bold ' + w4 + 'px fixedsys';
+      if (squares[x][y].control !== puzzle_squares[x][y].control) {
+        if (chk_verbose.checked) {
+          squares[x][y].ctx.fillStyle = "red";
+          squares[x][y].ctx.fillText(squares[x][y].control,8,w4);
+        }
+        squares[x][y].ctx.fillStyle = "darkgrey";
+        squares[x][y].ctx.fillText(puzzle_squares[x][y].control,squares[x][y].canvas.width-w4,w4);
+      }
+    }
+  }
+}
+
 function drawInterpolatedSquares(squares) {
   let pix_array = getInterpolatedBoard(squares,squares[0][0].canvas.width,squares[0][0].canvas.height);
   for (let y = 0; y < max_ranks; y++) {
     for (let x = 0; x < max_files; x++) {
       squares[x][y].ctx.putImageData(getInterpolatedSquare(x,y,squares[x][y].canvas.width,squares[x][y].canvas.height,pix_array),0,0);
-    }
-  }
-}
-
-function calcBoard(squares) {
-  for (let y = 0;y < max_ranks; y++) {
-    for (let x = 0; x < max_files; x++) {
-      squares[x][y].control = getControl(x,y,squares,false);
-      squares[x][y].color = getColor(squares[x][y]);
-    }
-  }
-}
-
-function showGridControlNumbers(squares,puzzle_squares) {
-  for (let y=0;y<max_ranks;y++) {
-    for (let x=0;x<max_files;x++) {
-      let w4 = (squares[x][y].canvas.width/4);
-      squares[x][y].ctx.font = 'bold ' + w4 + 'px fixedsys';
-      if (squares[x][y].control === puzzle_squares[x][y].control) squares[x][y].ctx.fillStyle = "white";
-      else squares[x][y].ctx.fillStyle = "red";
-      squares[x][y].ctx.fillText(squares[x][y].control + "/" + puzzle_squares[x][y].control,1,w4);
     }
   }
 }

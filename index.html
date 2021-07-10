@@ -25,11 +25,15 @@
 <body onload="onLoad()">
 
   <!-- Add your site or application content here -->
-  <button onclick="newPuzzle()">New</button>
-  <button onclick="nextHint()">Hint</button>
+  <button onclick="newPuzzle()" id = "butt-new">New</button>
+  <label for="butt-hint" id="lab-hint">Hints: 0 </label>
+  <button onclick="nextHint()" id="butt-hint">Hint</button>
+  <label for="chk-verbose">Verbose: </label>
+  <input type="checkbox" id="chk-verbose" onchange="refresh()">
   <div id="main">
-    <div id="puzzle"> <canvas id="puzzle_canvas"></canvas> </div>
-    <div id="solution" class="chess-grid"></div>
+    <div id="solution" class="chess-grid">
+      <div id="puzzle"> <canvas id="puzzle_canvas"></canvas> </div>
+    </div>
   </div>
   <script src="js/vendor/modernizr-3.11.2.min.js"></script>
   <script src="js/plugins.js"></script>
