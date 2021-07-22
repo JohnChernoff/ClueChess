@@ -1,19 +1,27 @@
 const RED = 0, GREEN = 1, BLUE = 2;
 const PIECE_CHRS = "kqrbnp-PNBRQK";
-const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const PUZZLE_FEN = "r1bqk2r/pppnppbp/3p1np1/8/2BP1P2/4PN2/PPP3PP/RNBQK2R w KQkq - 5 6";
 let piece_imgs = [];
-let puzzle_board = { squares: [], canvas: null, ctx: null };
+let puzzle = [];
 let solution_board = [];
 let max_files = 8, max_ranks = 8;
-let hint_lvl = 5, max_hints = 5;
+let missing = 1;
 let dragging = null;
 let show_control = true;
 let chk_verbose = document.getElementById("chk-verbose");
-let lab_hint = document.getElementById("lab-hint");
+
+function Square(piece,canvas) {
+  this.piece = piece;
+  this.control = 0;
+  this.color = rgb(0,0,0);
+  this.missing = false;
+  if (canvas !== undefined) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext("2d");
+  }
+}
 
 function onLoad() {
-  initBoard(puzzle_board,document.getElementById("puzzle_canvas"));
   initGridBoard(solution_board,document.getElementById("solution"));
   for (let i=0; i<6; i++) {
     piece_imgs[i] = { black: new Image(), white: new Image() }; //onload?
@@ -22,14 +30,19 @@ function onLoad() {
   }
 }
 
-function initBoard(board,canvas) {
-  board.canvas = canvas; board.ctx = canvas.getContext("2d");
-  canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight;
-  for (let x= 0; x < max_files; x++) {
-    board.squares[x] = [];
-    for (let y = 0; y < max_ranks; y++) {
-      board.squares[x][y] = { piece: 0, control: 0, color: rgb(0,0,0), hint_lvl : rnd(max_hints) };
-    }
+function initPuzzle(puzzle,fen) {
+  for (let x = 0; x < max_files; x++) {
+    puzzle[x] = [];
+    for (let y = 0; y < max_ranks; y++) puzzle[x][y] = new Square(0);
+  }
+  setFEN(puzzle,fen);
+  let timeout = 999;
+  for (let i=0;i<missing;i++) {
+    let ok = false; do {
+      let x = rnd(max_files), y = rnd(max_ranks);
+      if (puzzle[x][y].piece !== 0 && !puzzle[x][y].missing) { puzzle[x][y].missing = true; ok = true; }
+      else if (--timeout < 0) { console.log("Error setting up puzzle"); return; }
+    } while (!ok);
   }
 }
 
@@ -46,9 +59,7 @@ function initGridBoard(board,wrapper) {
       can.style.height = div.clientHeight + "px";
       can.width = div.clientWidth; can.height = div.clientHeight; //console.log(can.width + "," + div.clientWidth);
       div.appendChild(can);
-      board[file][rank] = {
-        piece: 0, control: 0, hint_lvl: 0, color: rgb(0,0,0), ctx : can.getContext("2d"), canvas: can
-      };
+      board[file][rank] = new Square(0,can);
       can.addEventListener("dragstart", ev => {  //console.log("Drag start: " + ev.target.id);
         let coord = getCoords(ev.target.id); dragging = { from: board[coord.x][coord.y], to: null };
       })
@@ -83,26 +94,21 @@ function getCoords(id) {
   return { x: id % max_files, y: Math.floor(id / max_ranks) };
 }
 
-function nextHint() {
-  if (hint_lvl > 0) hint_lvl--;
+function hideMissingPieces() {
   for (let y=0;y<max_ranks;y++) for (let x=0;x<max_files;x++) {
-    if (puzzle_board.squares[x][y].hint_lvl >= hint_lvl) solution_board[x][y].piece = puzzle_board.squares[x][y].piece;
-    else solution_board[x][y].piece = 0;
+    if (puzzle[x][y].missing) solution_board[x][y].piece = 0; else solution_board[x][y].piece = puzzle[x][y].piece;
   }
-  refresh();
 }
 
 function newPuzzle() {
-  hint_lvl = 5;
-  setFEN(puzzle_board.squares,PUZZLE_FEN); //drawBoard(puzzle_board,true);
-  setFEN(solution_board,START_FEN);
+  initPuzzle(puzzle,PUZZLE_FEN); //setFEN(solution_board,START_FEN);
   refresh();
 }
 
 function refresh() {
-  calcBoard(puzzle_board.squares);
+  calcBoard(puzzle);
+  hideMissingPieces();
   drawGridBoard(solution_board,show_control);
-  lab_hint.innerText = "Hints: " + (max_hints - hint_lvl);
 }
 
 function calcBoard(squares) {
@@ -114,35 +120,10 @@ function calcBoard(squares) {
   }
 }
 
-function drawBoard(board,show_pieces) {
-  calcBoard(board.squares);
-  let sqr_w = Math.round(board.canvas.width/max_files), sqr_h = Math.round(board.canvas.height/max_ranks);
-  drawInterpolatedBoard(board,getInterpolatedBoard(board.squares,sqr_w,sqr_h));
-  for (let y=0;y<max_ranks;y++) for (let x=0;x<max_files;x++) {
-    drawControl(board,sqr_w,sqr_h,x,y);
-    if (show_pieces && board.squares[x][y].hint_lvl >= hint_lvl) drawPiece(board,sqr_w,sqr_h,x,y);
-    board.ctx.strokeStyle = "white"; board.ctx.strokeRect((sqr_w * x),(sqr_h * y) ,sqr_w,sqr_h);
-  }
-}
-
-function drawPiece(board,w,h,x,y) {
-  let dx = w * x, dy = h * y, square = board.squares[x][y];
-  if (square.piece > 0) board.ctx.drawImage(piece_imgs[square.piece-1].white,dx+(w/4),dy+(h/4),w/2,h/2);
-  else if (square.piece < 0) board.ctx.drawImage(piece_imgs[-square.piece-1].black,dx+(w/4),dy+(h/4),w/2,h/2);
-}
-
-function drawControl(board,w,h,x,y) {
-  let dx = w * x, dy = h * y, square = board.squares[x][y];
-  let w4 = w/4;
-  board.ctx.font = 'bold ' + w4 + 'px fixedsys';
-  board.ctx.fillStyle = "yellow";
-  board.ctx.fillText(""+ square.control,dx + (w4/2) ,dy + w4);
-}
-
 function drawGridBoard(squares,show_control) {
   calcBoard(squares);
   drawInterpolatedSquares(squares);
-  if (show_control) drawGridControlNumbers(squares,puzzle_board.squares);
+  if (show_control) drawGridControlNumbers(squares,puzzle);
   for (let y=0;y<max_ranks;y++) for (let x=0;x<max_files;x++) drawGridPiece(squares[x][y]);
 }
 
@@ -229,17 +210,6 @@ function getInterpolatedSquare(file,rank,square_width,square_height,pix_array) {
   return img_data;
 }
 
-function drawInterpolatedBoard(board,pix_array) {
-  let square_width = Math.round(board.canvas.width/max_files), square_height = Math.round(board.canvas.height/max_ranks);
-  let img_data = board.ctx.createImageData(board.canvas.width,board.canvas.height), pixels = img_data.data;
-  for (let py = 0; py < board.canvas.height; py++) {
-    for (let px = 0; px < board.canvas.width; px++) {
-      setPixel((py * img_data.width + px) * 4,pixels,pix_array[px + square_width][py + square_height]);
-    }
-  }
-  board.ctx.putImageData(img_data,0,0);
-}
-
 function setPixel(offset,pixels,pix_array) {
   pixels[offset] = pix_array[0];
   pixels[offset + 1] = pix_array[1];
@@ -302,6 +272,3 @@ function rnd(n) {
   return Math.floor(Math.random() * n);
 }
 
-function setHints(squares) {
-  for (let y=0;y<max_ranks;y++) for (let x=0;x<max_files;x++) squares[x][y].hint_lvl = rnd(max_hints);
-}
