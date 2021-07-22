@@ -1,5 +1,5 @@
 <!doctype html>
-<html class="no-js" lang="">
+<html class="no-js" lang="" xmlns="http://www.w3.org/1999/html">
 
 <head>
   <meta charset="utf-8">
@@ -25,13 +25,15 @@
 <body onload="onLoad()">
 
   <!-- Add your site or application content here -->
-  <button onclick="newPuzzle()" id = "butt-new">New</button>
   <label hidden for="chk-verbose">Verbose: </label>
   <input hidden type="checkbox" id="chk-verbose" onchange="refresh()">
   <div id="main">
-    <div id="solution" class="chess-grid">
-      <div id="puzzle"> <canvas id="puzzle_canvas"></canvas> </div>
+    <button hidden onclick="newPuzzle()" id = "butt-new">New</button>
+    <div hidden id="options">
+      <label id="lab_missing" for="range-missing">Missing Pieces: </label>
+      <input type="range" id="range-missing" min="1" max="8" value="3" step="1" onchange="setMissing(false)">
     </div>
+    <div id="solution" class="chess-grid"> </div>
   </div>
   <script src="js/vendor/modernizr-3.11.2.min.js"></script>
   <script src="js/plugins.js"></script>

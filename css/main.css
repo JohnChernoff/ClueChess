@@ -27,6 +27,8 @@ body {
   width: 90vh;
   height: 90vh;
   background-color: darkslategray;
+  margin: auto;
+  position: relative;
 }
 
 .chess-grid {
@@ -42,15 +44,17 @@ body {
 }
 
 #solution {
-  width: 80vh;
-  height: 80vh;
-  float: left;
+  width: 80vh; height: 80vh;
   background-color: #888888;
+  margin: 0;
+  position: absolute;
+  top: 50%; left: 50%;
+  -ms-transform: translate(-50%, -50%); transform: translate(-50%, -50%);
 }
 
-#puzzle {
-  display: none;
-  position: absolute;
+#options {
+  float: right;
+  color: chartreuse;
 }
 
 button {
@@ -58,8 +62,14 @@ button {
   color: chartreuse;
 }
 
-label {
-  color: chartreuse;
+#range-missing {
+  background: linear-gradient(to right, red 0%, green 50%, grey 50%, white 100%);
+  border: solid 1px #82CFD0;
+  border-radius: 8px;
+  height: 8px;
+  outline: none;
+  transition: background 450ms ease-in;
+  -webkit-appearance: none;
 }
 
 /*

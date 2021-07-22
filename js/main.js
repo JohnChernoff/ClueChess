@@ -1,14 +1,27 @@
 const RED = 0, GREEN = 1, BLUE = 2;
 const PIECE_CHRS = "kqrbnp-PNBRQK";
-const PUZZLE_FEN = "r1bqk2r/pppnppbp/3p1np1/8/2BP1P2/4PN2/PPP3PP/RNBQK2R w KQkq - 5 6";
+let current_fen;
+let fens;
 let piece_imgs = [];
 let puzzle = [];
 let solution_board = [];
 let max_files = 8, max_ranks = 8;
-let missing = 1;
+let missing = 3;
 let dragging = null;
 let show_control = true;
 let chk_verbose = document.getElementById("chk-verbose");
+let range_missing = document.getElementById("range-missing");
+range_missing.oninput = function() {
+  let value = (this.value-this.min)/(this.max-this.min)*100;
+  this.style.background = 'linear-gradient(to right, red 0%, green ' + value + '%, grey ' + value + '%, white 100%)';
+};
+setMissing(true);
+
+function setMissing(init) {
+  missing = range_missing.value;
+  document.getElementById("lab_missing").textContent = "Missing Pieces: " + missing;
+  if (!init) newPuzzle(current_fen);
+}
 
 function Square(piece,canvas) {
   this.piece = piece;
@@ -28,9 +41,34 @@ function onLoad() {
     piece_imgs[i].black.src = "img/pieces/b" + (i+1) + ".svg";
     piece_imgs[i].white.src = "img/pieces/w" + (i+1) + ".svg";
   }
+  loadFENs();
 }
 
-function initPuzzle(puzzle,fen) {
+function loadFENs() {
+  fetch("data/lichess_db_puzzle.csv",{
+    headers: {  'Content-Type': 'text/csv' }
+  }).then(response => response.text()).then(text => text.split(/\r\n|\n/)).then(data => {
+    fens = data;
+    console.log("Loaded FENs");
+    document.getElementById("butt-new").hidden = false;
+    document.getElementById("options").hidden = false;
+    newPuzzle();
+  });
+}
+
+function newPuzzle(fen) {
+  if (fen === undefined) initPuzzle(puzzle,fens[rnd(fens.length)].split(",")[1]); else initPuzzle(puzzle,fen);
+  refresh();
+}
+
+function refresh() {
+  calcBoard(puzzle);
+  hideMissingPieces();
+  drawGridBoard(solution_board,show_control);
+}
+
+function initPuzzle(puzzle,fen) { //console.log("FEN: " + fen);
+  current_fen = fen;
   for (let x = 0; x < max_files; x++) {
     puzzle[x] = [];
     for (let y = 0; y < max_ranks; y++) puzzle[x][y] = new Square(0);
@@ -98,17 +136,6 @@ function hideMissingPieces() {
   for (let y=0;y<max_ranks;y++) for (let x=0;x<max_files;x++) {
     if (puzzle[x][y].missing) solution_board[x][y].piece = 0; else solution_board[x][y].piece = puzzle[x][y].piece;
   }
-}
-
-function newPuzzle() {
-  initPuzzle(puzzle,PUZZLE_FEN); //setFEN(solution_board,START_FEN);
-  refresh();
-}
-
-function refresh() {
-  calcBoard(puzzle);
-  hideMissingPieces();
-  drawGridBoard(solution_board,show_control);
 }
 
 function calcBoard(squares) {
@@ -268,7 +295,5 @@ function setFEN(squares,fen) { //console.log("FEN: " + fen);
   }
 }
 
-function rnd(n) {
-  return Math.floor(Math.random() * n);
-}
+function rnd(n) { return Math.floor(Math.random() * n); }
 
