@@ -29,12 +29,32 @@
   <input hidden type="checkbox" id="chk-verbose" onchange="refresh()">
   <div id="main">
     <button hidden onclick="newPuzzle()" id = "butt-new">New</button>
+    <button onclick="resetSolutionBoard()" id = "butt-reset">Reset</button>
+    <button onclick="showHelp()" id = "butt-help">Help</button>
     <div hidden id="options">
       <label id="lab_missing" for="range-missing">Missing Pieces: </label>
       <input type="range" id="range-missing" min="1" max="8" value="3" step="1" onchange="setMissing(false)">
     </div>
     <div id="solution" class="chess-grid"> </div>
   </div>
+
+  <div id="modal-help-overlay" class="modal_overlays">
+    <div id="modal-help-wrap" class="modal_boxes">
+      <span class="close" onclick="closeHelp()">&times;</span>
+      <h1> Welcome to Sweeper Chess! </h1>
+      <h2>
+        In each position there are some missing pieces that you must find to solve the puzzle. <br>
+        Add/reposition pieces with right/left clicking or dragging. <br>
+        Numbers indicate the degree of control one side exerts over a square.  <br>
+        For instance, if two Black pieces and one White piece can move to a square, the number would be -1. <br>
+        Squares are also shaded according to the degree of influence each side exerts. <br>
+        Have fun! <br>
+        <br>
+        - John Chernoff (ZugAddict on lichess.org)
+      </h2>
+    </div>
+  </div>
+
   <script src="js/vendor/modernizr-3.11.2.min.js"></script>
   <script src="js/plugins.js"></script>
   <script src="js/chess_matrix.js"></script>

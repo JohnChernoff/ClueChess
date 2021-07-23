@@ -9,6 +9,8 @@ let max_files = 8, max_ranks = 8;
 let missing = 3;
 let dragging = null;
 let show_control = true;
+let win_sounds = [];
+let help_screen = document.getElementById("modal-help-overlay");
 let chk_verbose = document.getElementById("chk-verbose");
 let range_missing = document.getElementById("range-missing");
 range_missing.oninput = function() {
@@ -16,6 +18,9 @@ range_missing.oninput = function() {
   this.style.background = 'linear-gradient(to right, red 0%, green ' + value + '%, grey ' + value + '%, white 100%)';
 };
 setMissing(true);
+
+function showHelp() { help_screen.style.display = "block"; }
+function closeHelp() { help_screen.style.display = "none"; }
 
 function setMissing(init) {
   missing = range_missing.value;
@@ -41,29 +46,28 @@ function onLoad() {
     piece_imgs[i].black.src = "img/pieces/b" + (i+1) + ".svg";
     piece_imgs[i].white.src = "img/pieces/w" + (i+1) + ".svg";
   }
+  for (let i=1; i<=8; i++) win_sounds[i-1] = new Audio('audio/win' + i + '.mp3');
   loadFENs();
 }
 
 function loadFENs() {
-  fetch("data/lichess_db_puzzle.csv",{
+  fetch("data/lichess_db_puzzle10000.csv",{
     headers: {  'Content-Type': 'text/csv' }
   }).then(response => response.text()).then(text => text.split(/\r\n|\n/)).then(data => {
     fens = data;
-    console.log("Loaded FENs");
     document.getElementById("butt-new").hidden = false;
+    document.getElementById("butt-reset").hidden = false;
     document.getElementById("options").hidden = false;
     newPuzzle();
-  });
+  }); console.log("Loaded FENs");
 }
 
 function newPuzzle(fen) {
   if (fen === undefined) initPuzzle(puzzle,fens[rnd(fens.length)].split(",")[1]); else initPuzzle(puzzle,fen);
-  refresh();
 }
 
 function refresh() {
   calcBoard(puzzle);
-  hideMissingPieces();
   drawGridBoard(solution_board,show_control);
 }
 
@@ -74,6 +78,18 @@ function initPuzzle(puzzle,fen) { //console.log("FEN: " + fen);
     for (let y = 0; y < max_ranks; y++) puzzle[x][y] = new Square(0);
   }
   setFEN(puzzle,fen);
+  setMissingPieces(puzzle);
+  resetSolutionBoard();
+}
+
+function resetSolutionBoard() {
+  for (let y=0;y<max_ranks;y++) for (let x=0;x<max_files;x++) {
+    if (puzzle[x][y].missing) solution_board[x][y].piece = 0; else solution_board[x][y].piece = puzzle[x][y].piece;
+  }
+  refresh();
+}
+
+function setMissingPieces(puzzle) {
   let timeout = 999;
   for (let i=0;i<missing;i++) {
     let ok = false; do {
@@ -82,6 +98,14 @@ function initPuzzle(puzzle,fen) { //console.log("FEN: " + fen);
       else if (--timeout < 0) { console.log("Error setting up puzzle"); return; }
     } while (!ok);
   }
+}
+
+function winCheck() { //console.log("Checking for winner...");
+  for (let y=0;y<max_ranks;y++) for (let x=0;x<max_files;x++) {
+    if (solution_board[x][y].piece !== puzzle[x][y].piece) return false;
+  } //console.log("Winner! " + missing);
+  win_sounds[missing-1].play();
+  return true;
 }
 
 function initGridBoard(board,wrapper) {
@@ -108,13 +132,13 @@ function initGridBoard(board,wrapper) {
         let rect = wrapper.getBoundingClientRect();
         if (inBounds(ev.pageX,ev.pageY,rect)) dragging.to.piece = dragging.from.piece;
         dragging.from.piece = 0; dragging = null;
-        drawGridBoard(board,show_control);
+        drawGridBoard(board,show_control); winCheck();
       });
       can.addEventListener("click", ev => {
-        let coord = getCoords(ev.target.id); scrollPiece(board,board[coord.x][coord.y],1);
+        let coord = getCoords(ev.target.id); scrollPiece(board,board[coord.x][coord.y],1); winCheck();
       });
       can.addEventListener("contextmenu",ev => {
-        let coord = getCoords(ev.target.id); scrollPiece(board,board[coord.x][coord.y],-1);
+        let coord = getCoords(ev.target.id); scrollPiece(board,board[coord.x][coord.y],-1); winCheck();
         ev.preventDefault();
       });
     }
@@ -130,12 +154,6 @@ function scrollPiece(board,square,dir) {
 
 function getCoords(id) {
   return { x: id % max_files, y: Math.floor(id / max_ranks) };
-}
-
-function hideMissingPieces() {
-  for (let y=0;y<max_ranks;y++) for (let x=0;x<max_files;x++) {
-    if (puzzle[x][y].missing) solution_board[x][y].piece = 0; else solution_board[x][y].piece = puzzle[x][y].piece;
-  }
 }
 
 function calcBoard(squares) {
@@ -154,10 +172,12 @@ function drawGridBoard(squares,show_control) {
   for (let y=0;y<max_ranks;y++) for (let x=0;x<max_files;x++) drawGridPiece(squares[x][y]);
 }
 
-function drawGridPiece(square) {
-  let w2 = square.canvas.width/2, w4 = square.canvas.width/4, h2 = square.canvas.height/2, h4 = square.canvas.height/3;
-  if (square.piece > 0) square.ctx.drawImage(piece_imgs[square.piece-1].white,w4,h4,w2,h2);
-  else if (square.piece < 0) square.ctx.drawImage(piece_imgs[-square.piece-1].black,w4,h4,w2,h2);
+function drawGridPiece(square) { //console.log(square);
+  if (!square.missing && square.piece !== 0) {
+    let w2 = square.canvas.width/2, w4 = square.canvas.width/4, h2 = square.canvas.height/2, h4 = square.canvas.height/3;
+    if (square.piece > 0) square.ctx.drawImage(piece_imgs[square.piece-1].white,w4,h4,w2,h2);
+    else square.ctx.drawImage(piece_imgs[-square.piece-1].black,w4,h4,w2,h2);
+  }
 }
 
 function drawGridControlNumbers(squares,puzzle_squares) {
@@ -238,9 +258,7 @@ function getInterpolatedSquare(file,rank,square_width,square_height,pix_array) {
 }
 
 function setPixel(offset,pixels,pix_array) {
-  pixels[offset] = pix_array[0];
-  pixels[offset + 1] = pix_array[1];
-  pixels[offset + 2] = pix_array[2];
+  pixels[offset] = pix_array[0]; pixels[offset + 1] = pix_array[1]; pixels[offset + 2] = pix_array[2];
   pixels[offset + 3] = 255;
 }
 
@@ -270,15 +288,15 @@ function getTwoColor(square,blackColor,voidColor,whiteColor) {
 }
 
 function rgb(r, g, b){
-  r = Math.floor(r);
-  g = Math.floor(g);
-  b = Math.floor(b);
+  r = Math.floor(r); g = Math.floor(g); b = Math.floor(b);
   return ["rgb(",r,",",g,",",b,")"].join("");
 }
 
 function rgb2array(rgb) {
   return rgb.match(/\d+/g);
 }
+
+function rnd(n) { return Math.floor(Math.random() * n); }
 
 function setFEN(squares,fen) { //console.log("FEN: " + fen);
   for (let y=0;y<max_ranks;y++) for (let x=0;x<max_files;x++) squares[x][y].piece = 0;
@@ -294,6 +312,3 @@ function setFEN(squares,fen) { //console.log("FEN: " + fen);
     }
   }
 }
-
-function rnd(n) { return Math.floor(Math.random() * n); }
-
