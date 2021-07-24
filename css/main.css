@@ -23,6 +23,10 @@ body {
   background-color: black;
 }
 
+a {
+  color: lightseagreen;
+}
+
 #main {
   width: 90vh;
   height: 90vh;
@@ -76,6 +80,12 @@ button {
   right: 0%; bottom: 0%;
 }
 
+textarea {
+  border: thick groove chartreuse;
+  background: black;
+  color: chartreuse;
+}
+
 #range-missing {
   background: linear-gradient(to right, red 0%, green 50%, grey 50%, white 100%);
   border: solid 1px #82CFD0;
@@ -115,6 +125,18 @@ button {
   padding: 20px;
   border: 1px solid chartreuse;
   width: 75%; /* Could be more or less, depending on screen size */
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  border: 1px solid #000000;
+  height: 2vh;
+  width: 1vw;
+  border-radius: 12px;
+  background: #ffffff;
+  cursor: pointer;
+  /* margin-top: -14px; /* You need to specify a margin in Chrome, but in Firefox and IE it is automatic */
+  box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d; /* Add cool effects to your sliders! */
 }
 
 /*

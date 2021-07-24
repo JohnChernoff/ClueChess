@@ -3,6 +3,7 @@ const PIECE_CHRS = "kqrbnp-PNBRQK";
 let current_fen;
 let fens;
 let piece_imgs = [];
+let pieces_loaded = 0;
 let puzzle = [];
 let solution_board = [];
 let max_files = 8, max_ranks = 8;
@@ -48,23 +49,36 @@ function Square(piece,canvas) {
 }
 
 function onLoad() {
+  console.log("Loading...");
   initGridBoard(solution_board,document.getElementById("solution"));
-  for (let i=0; i<6; i++) {
-    piece_imgs[i] = { black: new Image(), white: new Image() }; //onload?
-    piece_imgs[i].black.src = "img/pieces/b" + (i+1) + ".svg";
-    piece_imgs[i].white.src = "img/pieces/w" + (i+1) + ".svg";
-  }
-  for (let i=1; i<=8; i++) win_sounds[i-1] = new Audio('audio/win' + i + '.mp3');
-  loadFENs();
+  loadStuff();
 }
 
-function loadFENs() {
+function loadStuff() {
+  for (let i=1; i<=8; i++) win_sounds[i-1] = new Audio('audio/win' + i + '.mp3'); //don't wait on these
   fetch("data/lichess_db_puzzle10000.csv",{
     headers: {  'Content-Type': 'text/csv' }
   }).then(response => response.text()).then(text => text.split(/\r\n|\n/)).then(data => {
     fens = data;
-    newPuzzle();
+    loadPieces();
   }); console.log("Loaded FENs");
+}
+
+function loadPieces() {
+  for (let i=0; i<6; i++) {
+    piece_imgs[i] = { black: new Image(), white: new Image() };
+    piece_imgs[i].black.onload = onPieceLoad;
+    piece_imgs[i].white.onload = onPieceLoad;
+    piece_imgs[i].black.src = "img/pieces/b" + (i+1) + ".svg";
+    piece_imgs[i].white.src = "img/pieces/w" + (i+1) + ".svg";
+  }
+}
+
+function onPieceLoad() {
+  if (++pieces_loaded >= 12) {
+    console.log("Loaded Piece Images");
+    newPuzzle();
+  }
 }
 
 function startGame() {
