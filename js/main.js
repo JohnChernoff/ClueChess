@@ -9,8 +9,16 @@ let max_files = 8, max_ranks = 8;
 let missing = 3;
 let dragging = null;
 let show_control = true;
+let time_thread = null;
+let playing = false;
+let animation_start;
+let animation_time = 2000;
+let default_solve_time = 180;
+let solve_time, score; //let base_bonus = 60;
 let win_sounds = [];
 let help_screen = document.getElementById("modal-help-overlay");
+let txt_time = document.getElementById("text-time");
+let txt_score = document.getElementById("text-score");
 let chk_verbose = document.getElementById("chk-verbose");
 let range_missing = document.getElementById("range-missing");
 range_missing.oninput = function() {
@@ -23,7 +31,7 @@ function showHelp() { help_screen.style.display = "block"; }
 function closeHelp() { help_screen.style.display = "none"; }
 
 function setMissing(init) {
-  missing = range_missing.value;
+  missing = range_missing.valueAsNumber;
   document.getElementById("lab_missing").textContent = "Missing Pieces: " + missing;
   if (!init) newPuzzle(current_fen);
 }
@@ -55,15 +63,26 @@ function loadFENs() {
     headers: {  'Content-Type': 'text/csv' }
   }).then(response => response.text()).then(text => text.split(/\r\n|\n/)).then(data => {
     fens = data;
-    document.getElementById("butt-new").hidden = false;
-    document.getElementById("butt-reset").hidden = false;
-    document.getElementById("options").hidden = false;
     newPuzzle();
   }); console.log("Loaded FENs");
 }
 
+function startGame() {
+  newPuzzle();
+  playing = true; solve_time = default_solve_time; score = 0;
+  time_thread = setInterval(()=> {
+    txt_time.textContent = "Time: " + new Date(--solve_time * 1000).toISOString().substr(11, 8);
+    if (solve_time <= 0) endGame();
+  },1000);
+}
+
 function newPuzzle(fen) {
   if (fen === undefined) initPuzzle(puzzle,fens[rnd(fens.length)].split(",")[1]); else initPuzzle(puzzle,fen);
+  refresh();
+}
+
+function endGame() {
+  playing = false; clearInterval(time_thread); alert("Game Over!  Score: " + score);
 }
 
 function refresh() {
@@ -105,7 +124,20 @@ function winCheck() { //console.log("Checking for winner...");
     if (solution_board[x][y].piece !== puzzle[x][y].piece) return false;
   } //console.log("Winner! " + missing);
   win_sounds[missing-1].play();
+  if (playing) {
+    score += (missing * 2); //base_bonus + Math.max((30 * missing) - solve_time,0);
+    txt_score.textContent = "Score: " + score;
+    animation_start = Date.now(); victoryAnimation();
+  }
   return true;
+}
+
+function victoryAnimation() {
+  if (Date.now() - animation_start < animation_time) {
+    colorCycle(solution_board);
+    requestAnimationFrame(victoryAnimation);
+  }
+  else newPuzzle();
 }
 
 function initGridBoard(board,wrapper) {
@@ -294,6 +326,22 @@ function rgb(r, g, b){
 
 function rgb2array(rgb) {
   return rgb.match(/\d+/g);
+}
+
+function colorCycle(board) {
+  for (let y=0;y<max_ranks;y++) for (let x=0;x<max_files;x++) squareCycle(board[x][y].canvas,board[x][y].ctx);
+}
+
+function squareCycle(canvas,ctx) {
+  let img_data = ctx.getImageData(0,0,canvas.width,canvas.height); let pixels = img_data.data;
+  for (let i = 0; i < pixels.length; i+=4) {
+    for (let c = 0; c < 3; c++) {
+      let p = i + c; let v = Math.random() < .5 ? -4 : 4; pixels[p] += v;
+      if (pixels[p] > 255) pixels[p] = 0; else if (pixels[p] < 0) pixels[p] = 255;
+    }
+    pixels[i+3] = 255;
+  }
+  ctx.putImageData(img_data,0,0);
 }
 
 function rnd(n) { return Math.floor(Math.random() * n); }
