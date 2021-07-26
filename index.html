@@ -24,11 +24,20 @@
 
 <body onload="onLoad()">
 
+<div id="piece-wrapper">
+  <div id="piece-box">
+  </div>
+</div>
+
   <!-- Add your site or application content here -->
   <label hidden for="chk-verbose">Verbose: </label>
   <input hidden type="checkbox" id="chk-verbose" onchange="refresh()">
-  <textarea id="text-time">Time: </textarea>
-  <textarea id="text-score">Score: 0</textarea>
+  <div class="status">
+    <label for="chk-music" id="lab-chk-music">Music:</label>
+    <input type="checkbox" id="chk-music" onchange="toggleMusic(this)">
+  </div> <br>
+  <label class="status" id="text-time">Time: </label> <br>
+  <label class="status" id="text-score">Score: 0</label>
   <div id="main">
     <button onclick="newPuzzle()" id = "butt-new">New</button>
     <button onclick="startGame()" id = "butt-start">Start</button>

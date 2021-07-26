@@ -1,9 +1,12 @@
+//TODO: drag pieces from offboard, give hints (missing square highlighted, etc.), option for "normal" squares/pieces
+
 const RED = 0, GREEN = 1, BLUE = 2;
 const PIECE_CHRS = "kqrbnp-PNBRQK";
 let current_fen;
 let fens;
 let piece_imgs = [];
 let pieces_loaded = 0;
+let selected_square;
 let puzzle = [];
 let solution_board = [];
 let max_files = 8, max_ranks = 8;
@@ -17,10 +20,13 @@ let animation_time = 2000;
 let default_solve_time = 180;
 let solve_time, score; //let base_bonus = 60;
 let win_sounds = [];
+let music = false;
+let theme = new Audio('audio/SweeperTheme8bars.mp3');
 let help_screen = document.getElementById("modal-help-overlay");
 let txt_time = document.getElementById("text-time");
 let txt_score = document.getElementById("text-score");
 let chk_verbose = document.getElementById("chk-verbose");
+let piece_wrapper = document.getElementById("piece-wrapper");
 let range_missing = document.getElementById("range-missing");
 range_missing.oninput = function() {
   let value = (this.value-this.min)/(this.max-this.min)*100;
@@ -30,6 +36,14 @@ setMissing(true);
 
 function showHelp() { help_screen.style.display = "block"; }
 function closeHelp() { help_screen.style.display = "none"; }
+
+function toggleMusic(e) {
+  music = e.checked;
+  if (music) {
+    theme.play().then();
+    startScrolling();
+  } else theme.pause();
+}
 
 function setMissing(init) {
   missing = range_missing.valueAsNumber;
@@ -48,30 +62,25 @@ function Square(piece,canvas) {
   }
 }
 
+function startScrolling() {
+  let cssAnimation = document.createElement('style'); //cssAnimation.type = 'text/css';
+  let rules = document.createTextNode('@-webkit-keyframes backgroundScroll {' +
+  'from {background-position: 0 0;}' +
+  'to {background-position: 100vw 50vw;}');
+  cssAnimation.appendChild(rules);
+  document.getElementsByTagName("head")[0].appendChild(cssAnimation);
+}
+
 function onLoad() {
   console.log("Loading...");
   initGridBoard(solution_board,document.getElementById("solution"));
-  loadStuff();
-}
-
-function loadStuff() {
   for (let i=1; i<=8; i++) win_sounds[i-1] = new Audio('audio/win' + i + '.mp3'); //don't wait on these
   fetch("data/lichess_db_puzzle10000.csv",{
     headers: {  'Content-Type': 'text/csv' }
   }).then(response => response.text()).then(text => text.split(/\r\n|\n/)).then(data => {
-    fens = data;
-    loadPieces();
-  }); console.log("Loaded FENs");
-}
-
-function loadPieces() {
-  for (let i=0; i<6; i++) {
-    piece_imgs[i] = { black: new Image(), white: new Image() };
-    piece_imgs[i].black.onload = onPieceLoad;
-    piece_imgs[i].white.onload = onPieceLoad;
-    piece_imgs[i].black.src = "img/pieces/b" + (i+1) + ".svg";
-    piece_imgs[i].white.src = "img/pieces/w" + (i+1) + ".svg";
-  }
+    fens = data; console.log("Loaded FENs");
+    initPieceBox();
+  });
 }
 
 function onPieceLoad() {
@@ -82,12 +91,16 @@ function onPieceLoad() {
 }
 
 function startGame() {
-  newPuzzle();
-  playing = true; solve_time = default_solve_time; score = 0;
-  time_thread = setInterval(()=> {
-    txt_time.textContent = "Time: " + new Date(--solve_time * 1000).toISOString().substr(11, 8);
-    if (solve_time <= 0) endGame();
-  },1000);
+  if (!playing) {
+    newPuzzle();
+    playing = true; solve_time = default_solve_time; score = 0;
+    time_thread = setInterval(()=> {
+      txt_time.textContent = "Time: " + new Date(--solve_time * 1000).toISOString().substr(11, 8);
+      if (solve_time <= 0) endGame();
+    },1000);
+    document.getElementById("butt-start").textContent = "Stop";
+  }
+  else endGame();
 }
 
 function newPuzzle(fen) {
@@ -97,6 +110,7 @@ function newPuzzle(fen) {
 
 function endGame() {
   playing = false; clearInterval(time_thread); alert("Game Over!  Score: " + score);
+  document.getElementById("butt-start").textContent = "Start";
 }
 
 function refresh() {
@@ -154,6 +168,38 @@ function victoryAnimation() {
   else newPuzzle();
 }
 
+function initPieceBox() {
+  let box = document.getElementById("piece-box");
+  for (let i=0; i<6;i++) {
+    piece_imgs[i] = { black: new Image(), white: new Image() };
+    piece_imgs[i].black.onload = onPieceLoad;
+    piece_imgs[i].white.onload = onPieceLoad;
+    piece_imgs[i].black.src = "img/pieces/b" + (i+1) + ".svg";
+    piece_imgs[i].white.src = "img/pieces/w" + (i+1) + ".svg";
+    piece_imgs[i].black.addEventListener("click", () => {  choosePiece(-(i+1)); });
+    piece_imgs[i].white.addEventListener("click", () => {  choosePiece(i+1); });
+    piece_imgs[i].black.classList.add("piece-choice");
+    piece_imgs[i].white.classList.add("piece-choice");
+  }
+  for (let i=0; i<6;i++) box.appendChild(piece_imgs[i].black);
+  let empty_square_img = new Image(); empty_square_img.src = "img/x.png";
+  empty_square_img.classList.add("piece-choice");
+  empty_square_img.addEventListener("click",() => { choosePiece(0); });
+  box.appendChild(empty_square_img);
+  for (let i=0; i<6;i++) box.appendChild(piece_imgs[i].white);
+  let cancel_square_img = new Image(); cancel_square_img.src = "img/undo.png";
+  cancel_square_img.classList.add("piece-choice");
+  cancel_square_img.addEventListener("click",() => { choosePiece(); });
+  box.appendChild(cancel_square_img);
+}
+
+function choosePiece(p) {
+  piece_wrapper.style.display = "none";
+  if (p !== undefined) {
+    selected_square.piece = p; refresh(); winCheck();
+  }
+}
+
 function initGridBoard(board,wrapper) {
   for (let file=0;file<max_files;file++) board[file] = [];
   for (let rank=0;rank<max_ranks;rank++) {
@@ -184,7 +230,11 @@ function initGridBoard(board,wrapper) {
         let coord = getCoords(ev.target.id); scrollPiece(board,board[coord.x][coord.y],1); winCheck();
       });
       can.addEventListener("contextmenu",ev => {
-        let coord = getCoords(ev.target.id); scrollPiece(board,board[coord.x][coord.y],-1); winCheck();
+        let coord = getCoords(ev.target.id); //scrollPiece(board,board[coord.x][coord.y],-1); winCheck();
+        selected_square = board[coord.x][coord.y];
+        piece_wrapper.style.left = ev.pageX + "px";
+        piece_wrapper.style.top = ev.pageY + "px";
+        piece_wrapper.style.display = "block";
         ev.preventDefault();
       });
     }

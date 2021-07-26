@@ -20,7 +20,13 @@ html {
 body {
   width: 100%;
   height: 100%;
-  background-color: black;
+  background-image: url("../img/SweeperLogo.png");
+  background-repeat: repeat;
+  background-attachment: fixed;
+  -webkit-animation: backgroundScroll 15s linear 1;
+  -webkit-animation-fill-mode: forwards;
+  animation: backgroundScroll 15s linear 1;
+  animation-fill-mode: forwards;
 }
 
 a {
@@ -30,9 +36,32 @@ a {
 #main {
   width: 90vh;
   height: 90vh;
-  background-color: darkslategray;
+  background-color: rgba(38, 63, 63, 0.5);;
   margin: auto;
   position: relative;
+}
+
+.piece-choice {
+  width: 24px;
+  height: 24px;
+  border: 1px solid darkslategray;
+  cursor: pointer;
+}
+
+#piece-box {
+  display: grid;
+  grid-template-columns: repeat(7,1fr);
+  grid-template-rows: repeat(2,1fr);
+}
+
+#piece-wrapper {
+  z-index: 1;
+  position: fixed;
+  display: none;
+  background: black;
+  color: chartreuse;
+  width: 175px;
+  height: 50px;
 }
 
 .chess-grid {
@@ -80,7 +109,9 @@ button {
   right: 0%; bottom: 0%;
 }
 
-textarea {
+.status {
+  display: inline-block;
+  width: 120px;
   border: thick groove chartreuse;
   background: black;
   color: chartreuse;
