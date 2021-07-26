@@ -1,4 +1,4 @@
-//TODO: drag pieces from offboard, give hints (missing square highlighted, etc.), option for "normal" squares/pieces
+//TODO: give hints (missing square highlighted, etc.), option for "normal" squares/pieces
 
 const RED = 0, GREEN = 1, BLUE = 2;
 const PIECE_CHRS = "kqrbnp-PNBRQK";
@@ -23,6 +23,7 @@ let win_sounds = [];
 let music = false;
 let theme = new Audio('audio/SweeperTheme8bars.mp3');
 let help_screen = document.getElementById("modal-help-overlay");
+let about_screen = document.getElementById("modal-about-overlay");
 let txt_time = document.getElementById("text-time");
 let txt_score = document.getElementById("text-score");
 let chk_verbose = document.getElementById("chk-verbose");
@@ -35,7 +36,9 @@ range_missing.oninput = function() {
 setMissing(true);
 
 function showHelp() { help_screen.style.display = "block"; }
+function showAbout() { about_screen.style.display = "block"; }
 function closeHelp() { help_screen.style.display = "none"; }
+function closeAbout() { about_screen.style.display = "none"; }
 
 function toggleMusic(e) {
   music = e.checked;

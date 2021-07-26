@@ -41,13 +41,20 @@
   <div id="main">
     <button onclick="newPuzzle()" id = "butt-new">New</button>
     <button onclick="startGame()" id = "butt-start">Start</button>
-    <button onclick="resetSolutionBoard()" id = "butt-reset">Reset</button>
     <button onclick="showHelp()" id = "butt-help">Help</button>
+    <button onclick="resetSolutionBoard()" id = "butt-reset">Reset</button>
+    <button onclick="showAbout()" id = "butt-about">About</button>
     <div id="options">
       <label id="lab_missing" for="range-missing">Missing Pieces: </label>
       <input type="range" id="range-missing" min="1" max="8" value="3" step="1" onchange="setMissing(false)">
     </div>
     <div id="solution" class="chess-grid"> </div>
+  </div>
+
+  <div id="modal-about-overlay" class="modal_overlays">
+    <div id="modal-about-wrap">
+      <img id="about-img" src="img/SweeperAbout_Glossy2.png" onclick="closeAbout()">
+    </div>
   </div>
 
   <div id="modal-help-overlay" class="modal_overlays">
