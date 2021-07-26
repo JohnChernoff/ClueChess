@@ -36,8 +36,8 @@ a {
 #main {
   width: 90vh;
   height: 90vh;
-  background-color: rgba(38, 63, 63, 0.5);;
-  margin: auto;
+  background-color: rgba(38, 63, 63, 0.5);
+  margin: 5vh auto auto auto; /* auto; */
   position: relative;
 }
 
@@ -109,9 +109,16 @@ button {
   right: 0%; bottom: 0%;
 }
 
-.status {
-  display: inline-block;
+#sidebar {
+  position: fixed;
+  top: 0;
   width: 120px;
+  float: left;
+}
+
+.status-box {
+  display: inline-block;
+  width: 100%;
   border: thick groove chartreuse;
   background: black;
   color: chartreuse;
@@ -159,7 +166,7 @@ button {
 }
 
 #modal-about-wrap {
-  background-image: url("img/SweeperAbout_Glossy2.png");
+  background-image: url("../img/SweeperAbout.png");
   width: 50%;
   height: 50%;
 }
