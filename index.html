@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <title></title>
+  <title>ClueChess 0.1</title>
   <meta name="description" content="">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -23,6 +23,7 @@
 </head>
 
 <body onload="onLoad()">
+<!-- <div hidden id="svg_div"></div> -->
 
 <div id="piece-wrapper">
   <div id="piece-box">
@@ -30,8 +31,12 @@
 </div>
 
   <!-- Add your site or application content here -->
-  <label hidden for="chk-verbose">Verbose: </label>
-  <input hidden type="checkbox" id="chk-verbose" onchange="refresh()">
+  <div id="splash" class="modal_overlays" style="display: block">
+    <div style="background: cyan; color: darkslategray; float:right; top: 0; width: 25%">
+      <p id="txt_continue"></p>
+    </div>
+  </div>
+
   <div id="sidebar">
     <div class="status-box">
       <label for="chk-music" id="lab-chk-music">Music:</label>
@@ -39,6 +44,7 @@
     </div> <br>
     <label class="status-box" id="text-time">Time: </label> <br>
     <label class="status-box" id="text-score">Score: 0</label>
+    <table id="high-score-table"></table>
   </div>
 
   <div id="main">
@@ -48,22 +54,24 @@
     <button onclick="resetSolutionBoard()" id = "butt-reset">Reset</button>
     <button onclick="showAbout()" id = "butt-about">About</button>
     <div id="options">
+      <label hidden for="chk-verbose">Verbose: </label>
+      <input hidden type="checkbox" id="chk-verbose" onchange="refresh()">
       <label id="lab_missing" for="range-missing">Missing Pieces: </label>
-      <input type="range" id="range-missing" min="1" max="8" value="3" step="1" onchange="setMissing(false)">
+      <input type="range" id="range-missing" min="1" max="8" value="3" step="1" onchange="updateMissing(false)">
     </div>
     <div id="solution" class="chess-grid"> </div>
   </div>
 
   <div id="modal-about-overlay" class="modal_overlays">
     <div id="modal-about-wrap">
-      <img id="about-img" src="img/SweeperAbout.png" onclick="closeAbout()">
+      <img id="about-img" src="img/cluechess_about.png" alt="ClueChess 0.1" onclick="closeAbout()">
     </div>
   </div>
 
   <div id="modal-help-overlay" class="modal_overlays">
     <div id="modal-help-wrap" class="modal_boxes">
       <span class="close" onclick="closeHelp()">&times;</span>
-      <h1> Welcome to Sweeper Chess! </h1>
+      <h1> Welcome to ClueChess 0.1! </h1>
       <h2>
         In each position there are some missing pieces that you must place on the board to solve the puzzle. <br>
         Add/reposition pieces with right/left clicking or dragging. <br>
@@ -82,6 +90,8 @@
   <script src="js/vendor/modernizr-3.11.2.min.js"></script>
   <script src="js/plugins.js"></script>
   <script src="js/chess_matrix.js"></script>
+  <script src="js/colors.js"></script>
+  <script src="js/zugboard.js"></script>
   <script src="js/main.js"></script>
 
   <!-- Google Analytics: change UA-XXXXX-Y to be your site's ID. -->
