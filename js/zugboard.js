@@ -21,6 +21,10 @@ class ZugBoard {
   static BLUE = 2;
   static MAX_FILES = 8;
   static MAX_RANKS = 8;
+
+  interpolated = false;
+  img_light_sqr;
+  img_dark_sqr;
   board_background_color = [0,0,0]; //[255,255,255]; //[36,222,255];
   piece_wrapper;
   dragging = null;
@@ -34,11 +38,24 @@ class ZugBoard {
     this.piece_wrapper = piece_wrapper;
     this.initPieceBox(load_fun,choose_fun);
     this.initGridBoard(board_wrapper,click_fun);
+    this.img_light_sqr = new Image(); this.img_light_sqr.src = "img/light_square2.jpg";
+    this.img_dark_sqr = new Image(); this.img_dark_sqr.src = "img/dark_square2.jpg";
   }
 
-  fetchPiece(color,i,img,load_fun,choose_fun) {
+  fetchPNGPiece(color,i,img,load_fun,choose_fun) {
     let id = color + i; let p = color === "w" ? i : -i;
-    fetch("img/pieces/" + id +  ".svg", {cache: "reload"}).then(response => response.text()).then(text => {
+    img.onload = () => {
+      console.log("Loaded: " + id + ", " + this.pieces_loaded);
+      if (++this.pieces_loaded >= 12) load_fun();
+    }
+    img.addEventListener("click", () => { this.choosePiece(p,choose_fun); });
+    img.classList.add("piece-choice");
+    img.src = "img/pieces/zug/" + id + ".png";
+  }
+
+  fetchSVGPiece(color,i,img,load_fun,choose_fun) {
+    let id = color + i; let p = color === "w" ? i : -i;
+    fetch("img/pieces/svg/" + id +  ".svg", {cache: "reload"}).then(response => response.text()).then(text => {
       let svg = document.createElement("template");
       svg.innerHTML = text; let e = svg.content.getElementById(id); //console.log(id + " -> " + text + " -> " + e);
       //e.getElementById("layer1").style = color === "w" ? "fill:#ffffff" : "fill:#000000";
@@ -52,12 +69,22 @@ class ZugBoard {
   }
 
   initPieceBox(load_fun,choose_fun) {
+    this.pieces_loaded = 0;
     for (let i=0;i<6;i++) {
       this.piece_imgs[i] = { black: new Image(), white: new Image() };
-      this.fetchPiece("b",i+1,this.piece_imgs[i].black,load_fun,choose_fun);
-      this.fetchPiece("w",i+1,this.piece_imgs[i].white,load_fun,choose_fun);
+      if (this.interpolated) {
+        this.fetchSVGPiece("b",i+1,this.piece_imgs[i].black,load_fun,choose_fun);
+        this.fetchSVGPiece("w",i+1,this.piece_imgs[i].white,load_fun,choose_fun);
+      }
+      else {
+        this.fetchPNGPiece("b",i+1,this.piece_imgs[i].black,load_fun,choose_fun);
+        this.fetchPNGPiece("w",i+1,this.piece_imgs[i].white,load_fun,choose_fun);
+      }
     }
     let box = document.getElementById("piece-box");
+    while (box.firstChild) {
+      box.removeChild(box.firstChild);
+    }
     for (let i=0; i<6;i++) box.appendChild(this.piece_imgs[i].black);
     let empty_square_img = new Image(); empty_square_img.src = "img/x.png";
     empty_square_img.classList.add("piece-choice");
@@ -128,32 +155,52 @@ class ZugBoard {
 
   drawGridBoard() {
     ZugBoard.calcBoard(this.squares);
-    this.drawInterpolatedSquares();
+    if (this.interpolated) this.drawInterpolatedSquares(); else this.drawSquares();
     if (this.show_control) this.drawGridControlNumbers(puzzle);
     for (let y=0; y<ZugBoard.MAX_RANKS; y++) for (let x=0; x<ZugBoard.MAX_FILES; x++) this.drawGridPiece(this.squares[x][y]);
   }
 
   drawGridPiece(square) { //console.log(square);
+    let scale = this.interpolated ? .5 : .75;
     if (!square.missing && square.piece !== 0) {
-      let w2 = square.canvas.width/2, w4 = square.canvas.width/4, h2 = square.canvas.height/2, h4 = square.canvas.height/3;
-      if (square.piece > 0) square.ctx.drawImage(this.piece_imgs[square.piece-1].white,w4,h4,w2,h2);
-      else square.ctx.drawImage(this.piece_imgs[-square.piece-1].black,w4,h4,w2,h2);
+      //let w2 = square.canvas.width/2, w4 = square.canvas.width/4, h2 = square.canvas.height/2, h4 = square.canvas.height/3;
+      let x = square.canvas.width * ((1-scale)/2); let y = square.canvas.width * ((1-scale)/2);
+      let w = square.canvas.width * scale;
+      if (square.piece > 0) square.ctx.drawImage(this.piece_imgs[square.piece-1].white,x,y,w,w); //w4,h4,w2,h2);
+      else square.ctx.drawImage(this.piece_imgs[-square.piece-1].black,x,y,w,w,); //w4,h4,w2,h2);
     }
   }
 
   drawGridControlNumbers(puzzle_squares) {
     for (let y=0; y<ZugBoard.MAX_RANKS; y++) {
       for (let x=0; x<ZugBoard.MAX_FILES; x++) {
-        let w4 = (this.squares[x][y].canvas.width/4);
-        this.squares[x][y].ctx.font = 'bold ' + w4 + 'px fixedsys';
+        let corner_width = (this.squares[x][y].canvas.width/6);
+        this.squares[x][y].ctx.font = 'bold ' + corner_width + 'px fixedsys';
         if (this.squares[x][y].control !== puzzle_squares[x][y].control) {
           if (chk_verbose.checked) {
             this.squares[x][y].ctx.fillStyle = "red";
-            this.squares[x][y].ctx.fillText(this.squares[x][y].control,8,w4);
+            this.squares[x][y].ctx.fillText(this.squares[x][y].control,8,corner_width);
           }
-          this.squares[x][y].ctx.fillStyle = "darkgrey";
-          this.squares[x][y].ctx.fillText(puzzle_squares[x][y].control,this.squares[x][y].canvas.width-w4,w4);
+          if (this.interpolated) {
+            this.squares[x][y].ctx.fillStyle = "darkgrey";
+          }
+          else {
+            let rect_dim = corner_width * 1.5;
+            this.squares[x][y].ctx.fillStyle = "#000000";
+            this.squares[x][y].ctx.fillRect(this.squares[x][y].canvas.width - rect_dim,0,rect_dim,rect_dim);
+            this.squares[x][y].ctx.fillStyle = "#DD5555";
+          }
+          this.squares[x][y].ctx.fillText(puzzle_squares[x][y].control,this.squares[x][y].canvas.width-corner_width,corner_width);
         }
+      }
+    }
+  }
+
+  drawSquares() {
+    for (let y = 0; y < ZugBoard.MAX_RANKS; y++) {
+      for (let x = 0; x < ZugBoard.MAX_FILES; x++) {
+        this.squares[x][y].ctx.drawImage(this.squares[x][y].shade === ZugBoard.LIGHT ? this.img_light_sqr : this.img_dark_sqr,
+          0,0,this.squares[x][y].canvas.width,this.squares[x][y].canvas.width);
       }
     }
   }

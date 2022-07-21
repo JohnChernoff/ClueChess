@@ -197,3 +197,8 @@ function makeHighScoreTable(scores) { //console.log(scores);
     table.appendChild(entry_row);
   }
 }
+
+function setInterpolation() {
+  solution_board.interpolated = document.getElementById("chk-lerp").checked;
+  solution_board.initPieceBox(refresh,winCheck);
+}
