@@ -22,7 +22,7 @@ class ZugBoard {
   static MAX_FILES = 8;
   static MAX_RANKS = 8;
 
-  interpolated = false;
+  interpolated = true;
   img_light_sqr;
   img_dark_sqr;
   board_background_color = [0,0,0]; //[255,255,255]; //[36,222,255];

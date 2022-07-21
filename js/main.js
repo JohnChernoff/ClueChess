@@ -14,7 +14,7 @@ let default_solve_time = 180;
 let solve_time, score; //let base_bonus = 60;
 let win_sounds = [];
 let music = false;
-let theme = new Audio('audio/ClueChess1.mp3');
+let current_clip = new Audio('audio/ClueChess1.mp3');
 let help_screen = document.getElementById("modal-help-overlay");
 let about_screen = document.getElementById("modal-about-overlay");
 let splash_screen = document.getElementById("splash");
@@ -30,7 +30,8 @@ range_missing.oninput = function() {
 updateMissing(true);
 getHighScores();
 function getHighScores() {
-  fetch("http://chernovia.com:8087/scores").then(response => response.json()).then(json => makeHighScoreTable(json));
+  fetch("http://chernovia.com:8087/scores").then(response => response.json()).then(json => makeHighScoreTable(json))
+    .catch((error) => { console.log(error); document.getElementById("high-score-table").hidden = true; });
 }
 
 function showHelp() { help_screen.style.display = "block"; }
@@ -57,30 +58,38 @@ function onPieceLoad() {
 }
 
 function splashClick() {
-  splash_screen.style.display = "none"; splash_screen.onclick = null; //theme.play();
+  splash_screen.style.display = "none"; splash_screen.onclick = null;
   newPuzzle();
 }
 
 function toggleMusic(e) {
   music = e.checked;
   if (music) { //startScrolling();
-    theme.play().then();
-  } else theme.pause();
+    if (typeof current_clip.loop == 'boolean') { current_clip.loop = true; }
+    else {
+      current_clip.addEventListener('ended', function() { current_clip.currentTime = 0; playMusic(); }, false);
+    }
+  playMusic();
+  } else current_clip.pause();
+}
+
+function playMusic() {
+  current_clip.play().then(playing => { console.log("Starting/resuming playback"); });
+}
+
+function startScrolling() {
+  let cssAnimation = document.createElement('style'); //cssAnimation.type = 'text/css';
+  let rules = document.createTextNode('@-webkit-keyframes backgroundScroll {' +
+    'from {background-position: 0 0;}' +
+    'to {background-position: 100vw 50vw;}');
+  cssAnimation.appendChild(rules);
+  document.getElementsByTagName("head")[0].appendChild(cssAnimation);
 }
 
 function updateMissing(init) {
   missing = range_missing.valueAsNumber;
   document.getElementById("lab_missing").textContent = "Missing Pieces: " + missing;
   if (!init) newPuzzle(current_fen);
-}
-
-function startScrolling() {
-  let cssAnimation = document.createElement('style'); //cssAnimation.type = 'text/css';
-  let rules = document.createTextNode('@-webkit-keyframes backgroundScroll {' +
-  'from {background-position: 0 0;}' +
-  'to {background-position: 100vw 50vw;}');
-  cssAnimation.appendChild(rules);
-  document.getElementsByTagName("head")[0].appendChild(cssAnimation);
 }
 
 function startGame() {

@@ -56,7 +56,7 @@
       <label hidden for="chk-verbose">Verbose: </label>
       <input hidden type="checkbox" id="chk-verbose" onchange="refresh()">
       <label for="chk-lerp">Interpolated Board: </label>
-      <input type="checkbox" id="chk-lerp" onchange="setInterpolation()">
+      <input type="checkbox" id="chk-lerp" checked=true onchange="setInterpolation()">
       <label id="lab_missing" for="range-missing">Missing Pieces: </label>
       <input type="range" id="range-missing" min="1" max="8" value="3" step="1" onchange="updateMissing(false)">
     </div>
