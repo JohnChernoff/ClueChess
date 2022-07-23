@@ -1,4 +1,4 @@
-//TODO: give hints (missing square highlighted, etc.), option for "normal" squares/pieces
+//TODO: give hints (missing square highlighted, etc.)
 const PIECE_CHRS = "kqrbnp-PNBRQK";
 let current_fen;
 let fens;
@@ -12,9 +12,10 @@ let animation_start;
 let animation_time = 2000;
 let default_solve_time = 180;
 let solve_time, score; //let base_bonus = 60;
-let win_sounds = [];
+let win_sounds = new Array(8);
+let tracks = new Array(4);
+let current_track = 0;
 let music = false;
-let current_clip = new Audio('audio/ClueChess1.mp3');
 let help_screen = document.getElementById("modal-help-overlay");
 let about_screen = document.getElementById("modal-about-overlay");
 let splash_screen = document.getElementById("splash");
@@ -42,13 +43,26 @@ function closeAbout() { about_screen.style.display = "none"; }
 function onLoad() { console.log("Loading...");
   splash_continue_msg.textContent = "Loading...";
   splash_screen.style.display = "block";
-  for (let i=1; i<=8; i++) win_sounds[i-1] = new Audio('audio/win' + i + '.mp3'); //don't wait on these
+  loadAudio();
   fetch("data/lichess_db_puzzle10000.csv",{
     headers: {  'Content-Type': 'text/csv' }
   }).then(response => response.text()).then(text => text.split(/\r\n|\n/)).then(data => {
     fens = data; console.log("Loaded FENs");
     solution_board = new ZugBoard(document.getElementById("solution"),document.getElementById("piece-wrapper"),onPieceLoad,winCheck,winCheck);
   });
+}
+
+function loadAudio() {
+  for (let i=0; i<win_sounds.length; i++) win_sounds[i] = new Audio('audio/clips/win' + (i + 1) + '.mp3');
+  for (let i=0; i<tracks.length; i++) {
+    tracks[i] = new Audio('audio/tracks/track' + (i + 1) +  '.mp3');
+    tracks[i].addEventListener('ended', function() {
+      current_track = shuffleTrack();
+      tracks[current_track].currentTime = 0;
+      playMusic();
+    },false);
+  }
+  current_track = shuffleTrack();
 }
 
 function onPieceLoad() {
@@ -62,21 +76,6 @@ function splashClick() {
   newPuzzle();
 }
 
-function toggleMusic(e) {
-  music = e.checked;
-  if (music) { //startScrolling();
-    if (typeof current_clip.loop == 'boolean') { current_clip.loop = true; }
-    else {
-      current_clip.addEventListener('ended', function() { current_clip.currentTime = 0; playMusic(); }, false);
-    }
-  playMusic();
-  } else current_clip.pause();
-}
-
-function playMusic() {
-  current_clip.play().then(playing => { console.log("Starting/resuming playback"); });
-}
-
 function startScrolling() {
   let cssAnimation = document.createElement('style'); //cssAnimation.type = 'text/css';
   let rules = document.createTextNode('@-webkit-keyframes backgroundScroll {' +
@@ -84,6 +83,23 @@ function startScrolling() {
     'to {background-position: 100vw 50vw;}');
   cssAnimation.appendChild(rules);
   document.getElementsByTagName("head")[0].appendChild(cssAnimation);
+}
+
+function toggleMusic(e) {
+  music = e.checked;
+  if (music) playMusic(); else tracks[current_track].pause();
+}
+
+function playMusic() {
+  tracks[current_track].play().then(() => { console.log("Starting/resuming playback"); });
+}
+
+function shuffleTrack() {
+  let new_track = current_track;
+  while (current_track === new_track) {
+    new_track = Math.floor(Math.random() * tracks.length);
+  }
+  return new_track;
 }
 
 function updateMissing(init) {
