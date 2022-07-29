@@ -24,12 +24,11 @@
 
 <body onload="onLoad()">
 
-<div id="piece-wrapper">
-  <div id="piece-box">
+  <div id="piece-wrapper">
+    <div id="piece-box">
+    </div>
   </div>
-</div>
 
-  <!-- Add your site or application content here -->
   <div id="splash" class="modal_overlays" style="display: block">
     <div style="background: cyan; color: darkslategray; float:right; top: 0; width: 25%">
       <p id="txt_continue"></p>
@@ -64,15 +63,18 @@
     <div id="solution" class="chess-grid"> </div>
   </div>
 
+  <img class="discord-link"
+       src="img/discord_logo.png"
+       alt="Discord"
+       onclick="window.open('https://discord.gg/Bk3Ay8xybk', '_blank')">
+
   <div id="modal-about-overlay" class="modal_overlays">
-    <div id="modal-about-wrap">
-      <img id="about-img" src="img/cluechess_about.png" alt="ClueChess 0.1" onclick="closeAbout()">
+    <div id="modal-about-wrap" onclick="closeAbout()">
     </div>
   </div>
 
   <div id="modal-help-overlay" class="modal_overlays">
-    <div id="modal-help-wrap" class="modal_boxes">
-      <span class="close" onclick="closeHelp()">&times;</span>
+    <div id="modal-help-wrap" class="modal_boxes" onclick="closeHelp()">
       <h1> Welcome to ClueChess 0.1! </h1>
       <h2>
         In each position there are some missing pieces that you must place on the board to solve the puzzle. <br>

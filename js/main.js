@@ -1,6 +1,5 @@
 //TODO: give hints (missing square highlighted, etc.)
 const PIECE_CHRS = "kqrbnp-PNBRQK";
-//let current_fen;
 let current_fen_idx;
 let fens;
 let puzzle = [];
@@ -187,8 +186,7 @@ function resetSolutionBoard() {
   refresh();
 }
 
-function setMissingPieces(puzzle) {
-  console.log("Seed: " + seed + ", " + rnd(999));
+function setMissingPieces(puzzle) { //console.log("Seed: " + seed + ", " + rnd(999));
   let timeout = 999;
   for (let i=0;i<missing;i++) {
     let ok = false; do {
