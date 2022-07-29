@@ -1,6 +1,7 @@
 //TODO: give hints (missing square highlighted, etc.)
 const PIECE_CHRS = "kqrbnp-PNBRQK";
-let current_fen;
+//let current_fen;
+let current_fen_idx;
 let fens;
 let puzzle = [];
 let solution_board;
@@ -16,6 +17,8 @@ let win_sounds = new Array(8);
 let tracks = new Array(4);
 let current_track = 0;
 let music = false;
+let seed;
+let rnd_fun;
 let help_screen = document.getElementById("modal-help-overlay");
 let about_screen = document.getElementById("modal-about-overlay");
 let splash_screen = document.getElementById("splash");
@@ -25,7 +28,7 @@ let txt_score = document.getElementById("text-score");
 let chk_verbose = document.getElementById("chk-verbose");
 let range_missing = document.getElementById("range-missing");
 range_missing.oninput = function() {
-  let value = (this.value-this.min)/(this.max-this.min)*100;
+  let value = (this.value-this.min) / (this.max-this.min) * 100;
   this.style.background = 'linear-gradient(to right, red 0%, green ' + value + '%, grey ' + value + '%, white 100%)';
 };
 updateMissing(true);
@@ -52,6 +55,21 @@ function onLoad() { console.log("Loading...");
   });
 }
 
+function onPieceLoad() {
+  console.log("Loaded Piece Images");
+  splash_continue_msg.textContent = "Click anywhere to continue...";
+  splash_screen.onclick = splashClick;
+  loadArgs();
+}
+
+function loadArgs() {
+  let args = getJsonFromUrl();
+  if (args.seed !== undefined) {
+    clearSplash();
+    newPuzzle(parseInt(args.seed));
+  }
+}
+
 function loadAudio() {
   for (let i=0; i<win_sounds.length; i++) win_sounds[i] = new Audio('audio/clips/win' + (i + 1) + '.mp3');
   for (let i=0; i<tracks.length; i++) {
@@ -65,15 +83,17 @@ function loadAudio() {
   current_track = shuffleTrack();
 }
 
-function onPieceLoad() {
-  console.log("Loaded Piece Images");
-  splash_continue_msg.textContent = "Click anywhere to continue...";
-  splash_screen.onclick = splashClick;
+function copyURL() {
+  let url = location.host + location.pathname + "?seed=" + seed; //+ "&id=" + current_fen_idx;
+  navigator.clipboard.writeText(url).then(() => { alert("Copied: " + url); });
+}
+
+function clearSplash() {
+  splash_screen.style.display = "none"; splash_screen.onclick = null;
 }
 
 function splashClick() {
-  splash_screen.style.display = "none"; splash_screen.onclick = null;
-  newPuzzle();
+  clearSplash(); newPuzzle();
 }
 
 function startScrolling() {
@@ -105,7 +125,7 @@ function shuffleTrack() {
 function updateMissing(init) {
   missing = range_missing.valueAsNumber;
   document.getElementById("lab_missing").textContent = "Missing Pieces: " + missing;
-  if (!init) newPuzzle(current_fen);
+  if (!init) newPuzzle(current_fen_idx);
 }
 
 function startGame() {
@@ -121,11 +141,6 @@ function startGame() {
     document.getElementById("butt-start").textContent = "Stop";
   }
   else endGame();
-}
-
-function newPuzzle(fen) {
-  if (fen === undefined) initPuzzle(puzzle,fens[rnd(fens.length)].split(",")[1]); else initPuzzle(puzzle,fen);
-  refresh();
 }
 
 function endGame() {
@@ -145,13 +160,22 @@ function refresh() {
   }
 }
 
-function initPuzzle(puzzle,fen) { //console.log("FEN: " + fen);
-  current_fen = fen;
+function getFen(i) { return fens[i].split(",")[1]; }
+
+function newPuzzle(n) {
+  if (n === undefined) seed = Math.round((Math.random() * 999)); else seed = n;
+  rnd_fun = mulberry32(seed);
+  initPuzzle(puzzle,rnd(fens.length)); //else initPuzzle(puzzle,i);
+  refresh();
+}
+
+function initPuzzle(puzzle,i) { //console.log("FEN: " + fen);
+  current_fen_idx = i;
   for (let x = 0; x < ZugBoard.MAX_FILES; x++) {
     puzzle[x] = [];
     for (let y = 0; y < ZugBoard.MAX_RANKS; y++) puzzle[x][y] = new Square(0);
   }
-  ZugBoard.setFEN(puzzle,fen);
+  ZugBoard.setFEN(puzzle,getFen(current_fen_idx));
   setMissingPieces(puzzle);
   resetSolutionBoard();
 }
@@ -164,6 +188,7 @@ function resetSolutionBoard() {
 }
 
 function setMissingPieces(puzzle) {
+  console.log("Seed: " + seed + ", " + rnd(999));
   let timeout = 999;
   for (let i=0;i<missing;i++) {
     let ok = false; do {
@@ -195,8 +220,6 @@ function victoryAnimation() {
   else newPuzzle();
 }
 
-function rnd(n) { return Math.floor(Math.random() * n); }
-
 function makeHighScoreTable(scores) { //console.log(scores);
   let table = document.getElementById("high-score-table");
   while (table.firstChild) table.removeChild(table.lastChild);
@@ -227,3 +250,25 @@ function setInterpolation() {
   solution_board.interpolated = document.getElementById("chk-lerp").checked;
   solution_board.initPieceBox(refresh,winCheck);
 }
+
+function getJsonFromUrl(url) {
+  if(!url) url = location.search;
+  let query = url.substr(1);
+  let result = {};
+  query.split("&").forEach(function(part) {
+    let item = part.split("=");
+    result[item[0]] = decodeURIComponent(item[1]);
+  });
+  return result;
+}
+
+function mulberry32(a) {
+  return function() {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+
+function rnd(n) { return Math.floor(rnd_fun() * n); }
