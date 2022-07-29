@@ -2,7 +2,7 @@
 const PIECE_CHRS = "kqrbnp-PNBRQK";
 let current_fen_idx;
 let fens;
-let puzzle = [];
+let puzzle;
 let solution_board;
 let missing = 3;
 let time_thread = null;
@@ -30,7 +30,6 @@ range_missing.oninput = function() {
   let value = (this.value-this.min) / (this.max-this.min) * 100;
   this.style.background = 'linear-gradient(to right, red 0%, green ' + value + '%, grey ' + value + '%, white 100%)';
 };
-updateMissing(true);
 getHighScores();
 function getHighScores() {
   fetch("http://chernovia.com:8087/scores").then(response => response.json()).then(json => makeHighScoreTable(json))
@@ -63,9 +62,13 @@ function onPieceLoad() {
 
 function loadArgs() {
   let args = getJsonFromUrl();
-  if (args.seed !== undefined) {
+  if (args.seed !== undefined && args.missing !== undefined) {
     clearSplash();
+    updateMissing(args.missing);
     newPuzzle(parseInt(args.seed));
+  }
+  else {
+    updateMissing();
   }
 }
 
@@ -83,7 +86,7 @@ function loadAudio() {
 }
 
 function copyURL() {
-  let url = location.host + location.pathname + "?seed=" + seed; //+ "&id=" + current_fen_idx;
+  let url = location.host + location.pathname + "?seed=" + seed + "&missing=" + missing;
   navigator.clipboard.writeText(url).then(() => { alert("Copied: " + url); });
 }
 
@@ -93,15 +96,6 @@ function clearSplash() {
 
 function splashClick() {
   clearSplash(); newPuzzle();
-}
-
-function startScrolling() {
-  let cssAnimation = document.createElement('style'); //cssAnimation.type = 'text/css';
-  let rules = document.createTextNode('@-webkit-keyframes backgroundScroll {' +
-    'from {background-position: 0 0;}' +
-    'to {background-position: 100vw 50vw;}');
-  cssAnimation.appendChild(rules);
-  document.getElementsByTagName("head")[0].appendChild(cssAnimation);
 }
 
 function toggleMusic(e) {
@@ -121,10 +115,11 @@ function shuffleTrack() {
   return new_track;
 }
 
-function updateMissing(init) {
-  missing = range_missing.valueAsNumber;
+function updateMissing(v) {
+  if (v !== undefined) range_missing.value = missing = v;
+  else missing = range_missing.valueAsNumber; //console.log("Missing: " + missing);
   document.getElementById("lab_missing").textContent = "Missing Pieces: " + missing;
-  if (!init) newPuzzle(current_fen_idx);
+  if (puzzle !== undefined) newPuzzle(seed);
 }
 
 function startGame() {
@@ -162,14 +157,9 @@ function refresh() {
 function getFen(i) { return fens[i].split(",")[1]; }
 
 function newPuzzle(n) {
-  if (n === undefined) seed = Math.round((Math.random() * 999)); else seed = n;
+  if (n === undefined) seed = Math.round((Math.random() * 999)); else seed = n; //console.log("Seed: " + seed);
   rnd_fun = mulberry32(seed);
-  initPuzzle(puzzle,rnd(fens.length)); //else initPuzzle(puzzle,i);
-  refresh();
-}
-
-function initPuzzle(puzzle,i) { //console.log("FEN: " + fen);
-  current_fen_idx = i;
+  puzzle = []; current_fen_idx = rnd(fens.length);
   for (let x = 0; x < ZugBoard.MAX_FILES; x++) {
     puzzle[x] = [];
     for (let y = 0; y < ZugBoard.MAX_RANKS; y++) puzzle[x][y] = new Square(0);
@@ -177,6 +167,7 @@ function initPuzzle(puzzle,i) { //console.log("FEN: " + fen);
   ZugBoard.setFEN(puzzle,getFen(current_fen_idx));
   setMissingPieces(puzzle);
   resetSolutionBoard();
+  refresh();
 }
 
 function resetSolutionBoard() {
@@ -218,6 +209,20 @@ function victoryAnimation() {
   else newPuzzle();
 }
 
+function setInterpolation() {
+  solution_board.interpolated = document.getElementById("chk-lerp").checked;
+  solution_board.initPieceBox(refresh,winCheck);
+}
+
+function startScrolling() {
+  let cssAnimation = document.createElement('style'); //cssAnimation.type = 'text/css';
+  let rules = document.createTextNode('@-webkit-keyframes backgroundScroll {' +
+    'from {background-position: 0 0;}' +
+    'to {background-position: 100vw 50vw;}');
+  cssAnimation.appendChild(rules);
+  document.getElementsByTagName("head")[0].appendChild(cssAnimation);
+}
+
 function makeHighScoreTable(scores) { //console.log(scores);
   let table = document.getElementById("high-score-table");
   while (table.firstChild) table.removeChild(table.lastChild);
@@ -242,11 +247,6 @@ function makeHighScoreTable(scores) { //console.log(scores);
     entry_row.appendChild(level_entry);
     table.appendChild(entry_row);
   }
-}
-
-function setInterpolation() {
-  solution_board.interpolated = document.getElementById("chk-lerp").checked;
-  solution_board.initPieceBox(refresh,winCheck);
 }
 
 function getJsonFromUrl(url) {
