@@ -50,6 +50,7 @@
     <button onclick="newPuzzle()" id = "butt-new">New</button>
     <button onclick="startGame()" id = "butt-start">Start</button>
     <button onclick="showHelp()" id = "butt-help">Help</button>
+    <button onclick="runTutorial(0)" id = "butt-tut">Tutorial</button>
     <button onclick="resetSolutionBoard()" id = "butt-reset">Reset</button>
     <button onclick="showAbout()" id = "butt-about">About</button>
     <div id="options">
@@ -58,7 +59,7 @@
       <label for="chk-lerp">Interpolated Board: </label>
       <input type="checkbox" id="chk-lerp" checked=true onchange="setInterpolation()">
       <label id="lab_missing" for="range-missing">Missing Pieces: </label>
-      <input type="range" id="range-missing" min="1" max="8" value="3" step="1" onchange="updateMissing()">
+      <input type="range" id="range-missing" min="1" max="8" value="3" step="1" onchange="updateMissing(true)">
     </div>
     <div id="solution" class="chess-grid"> </div>
   </div>
@@ -67,6 +68,14 @@
        src="img/discord_logo.png"
        alt="Discord"
        onclick="window.open('https://discord.gg/Bk3Ay8xybk', '_blank')">
+
+  <div id="modal-tutorial-overlay" class="modal_overlays" onclick="closeTutorial()">
+    <div id="modal-tutorial-wrap" style="margin: 5%">
+      <p id="txt-tutorial">Hello!</p>
+      <img src="img/mole1.jpg" style="position: absolute; width: 75%; height: 75%">
+      <p style="position: absolute; background: green; bottom: 0"> Click to continue... </p>
+    </div>
+  </div>
 
   <div id="modal-about-overlay" class="modal_overlays">
     <div id="modal-about-wrap" onclick="closeAbout()">

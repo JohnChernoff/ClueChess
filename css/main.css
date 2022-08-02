@@ -196,6 +196,13 @@ button {
   height: 50%;
 }
 
+#modal-tutorial-overlay {
+  background-color: black;
+  color: white;
+  width: 50%;
+  height: 70%;
+}
+
 .discord-link {
   position: absolute;
   width: 100px;

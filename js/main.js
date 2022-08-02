@@ -1,8 +1,30 @@
 //TODO: give hints (missing square highlighted, etc.)
 const PIECE_CHRS = "kqrbnp-PNBRQK";
+let tutorial_lvl = -1;
+let tutorial_content = [
+  { fen: "4k3/4p3/8/8/4N3/8/4P3/4K3 w - - 0 1", missing: [{file: 4, rank: 4}], txt:
+      "Welcome to ClueChess!  I'm your guide, Moleiarty.  Let's get started!   Each puzzle has one or more missing chess pieces that you must discover - your only " +
+      "clues are the numbers on some squares, indicating the aggregate control over that square by each side.  Right-click anywhere on the board to add/change a piece.  " +
+      "Let's start with a simple example: note the numbers form a 'wheel' pattern, suggesting a certain piece - can you figure out which?",
+    err: "Sorry, that's not the right piece or piece color.  Here's a hint: note that none of the numbers directly align with each other.  What chess piece doesn't move " +
+      "in a straight line?"  },
+  { fen: "7k/8/8/8/rb6/8/8/1R5K w - - 0 1",  missing: [{file: 1, rank: 4}], txt:
+      "Well done - Knights are tricky!  Now see if you can figure out why there's so many numbers in this next puzzle.",
+    err: "Sorry!  That's not the right answer.  Here's a hint: numbers not only suggest squares controlled by a hidden piece but also squares " +
+      "blocked from being controlled by other pieces by a hidden piece.  In this case there are lots of numbers in a line radiating from each rook - what might that " +
+      "suggest to you?" },
+  { fen: "r4rk1/pbppbppp/1p2p3/4P3/1q2n3/2N2QP1/PPBP1P1P/R1B1R1K1 w Qq - 0 1",  missing: [{file: 4, rank: 4}], txt:
+      "That blocky black bishop!  Now see if you can sort out the mess in this one - again there is only one missing piece...",
+    err: "Sorry!  That's not the right answer.  Try again!" },
+  { fen: "r3k2r/p2nbppp/bpn1p3/q1ppP3/N2P1P1P/1PP1BN2/P4KP1/R2Q1B1R b kq - 0 12",  missing: [{file: 0, rank: 2},{file: 0, rank: 3},{file: 0, rank: 4}], txt:
+      "Great job - I see you've got the hang of this now!  As a graduation gift for finishing this tutorial, I'll leave you with a multiple piece puzzle to work out on " +
+      "your own.  Good luck!"
+  }
+];
+
 let current_fen_idx;
 let fens;
-let puzzle;
+let puzzle = [];
 let solution_board;
 let missing = 3;
 let time_thread = null;
@@ -18,6 +40,7 @@ let current_track = 0;
 let music = false;
 let seed;
 let rnd_fun;
+let tutorial_screen = document.getElementById("modal-tutorial-overlay");
 let help_screen = document.getElementById("modal-help-overlay");
 let about_screen = document.getElementById("modal-about-overlay");
 let splash_screen = document.getElementById("splash");
@@ -40,6 +63,12 @@ function showHelp() { help_screen.style.display = "block"; }
 function showAbout() { about_screen.style.display = "block"; }
 function closeHelp() { help_screen.style.display = "none"; }
 function closeAbout() { about_screen.style.display = "none"; }
+function closeTutorial() { tutorial_screen.style.display = "none"; solution_board.editable = true; }
+function showTutorial(msg) {
+  tutorial_screen.style.display = "block";
+  solution_board.editable = false;
+  document.getElementById("txt-tutorial").textContent = msg;
+}
 
 function onLoad() { console.log("Loading...");
   splash_continue_msg.textContent = "Loading...";
@@ -64,11 +93,11 @@ function loadArgs() {
   let args = getJsonFromUrl();
   if (args.seed !== undefined && args.missing !== undefined) {
     clearSplash();
-    updateMissing(args.missing);
+    setMissing(args.missing);
     newPuzzle(parseInt(args.seed));
   }
   else {
-    updateMissing();
+    updateMissing(false);
   }
 }
 
@@ -110,16 +139,19 @@ function playMusic() {
 function shuffleTrack() {
   let new_track = current_track;
   while (current_track === new_track) {
-    new_track = Math.floor(Math.random() * tracks.length);
+    new_track = rnd(tracks.length);
   }
   return new_track;
 }
 
-function updateMissing(v) {
-  if (v !== undefined) range_missing.value = missing = v;
-  else missing = range_missing.valueAsNumber; //console.log("Missing: " + missing);
+function updateMissing(reload) {
+  setMissing(range_missing.valueAsNumber);
+  if (reload) newPuzzle(seed);
+}
+
+function setMissing(v) {
+  range_missing.value = missing = v;
   document.getElementById("lab_missing").textContent = "Missing Pieces: " + missing;
-  if (puzzle !== undefined) newPuzzle(seed);
 }
 
 function startGame() {
@@ -159,13 +191,20 @@ function getFen(i) { return fens[i].split(",")[1]; }
 function newPuzzle(n) {
   if (n === undefined) seed = Math.round((Math.random() * 999)); else seed = n; //console.log("Seed: " + seed);
   rnd_fun = mulberry32(seed);
-  puzzle = []; current_fen_idx = rnd(fens.length);
+  current_fen_idx = seedy_rnd(fens.length);
+  newFEN(getFen(current_fen_idx));
+}
+
+function newFEN(fen,list) { //console.log("FEN: " + fen);
+
+  puzzle = [];
   for (let x = 0; x < ZugBoard.MAX_FILES; x++) {
     puzzle[x] = [];
     for (let y = 0; y < ZugBoard.MAX_RANKS; y++) puzzle[x][y] = new Square(0);
   }
-  ZugBoard.setFEN(puzzle,getFen(current_fen_idx));
-  setMissingPieces(puzzle);
+
+  ZugBoard.setFEN(puzzle,fen);
+  setMissingPieces(list);
   resetSolutionBoard();
   refresh();
 }
@@ -177,20 +216,31 @@ function resetSolutionBoard() {
   refresh();
 }
 
-function setMissingPieces(puzzle) { //console.log("Seed: " + seed + ", " + rnd(999));
-  let timeout = 999;
-  for (let i=0;i<missing;i++) {
-    let ok = false; do {
-      let x = rnd(ZugBoard.MAX_FILES), y = rnd(ZugBoard.MAX_RANKS);
-      if (puzzle[x][y].piece !== 0 && !puzzle[x][y].missing) { puzzle[x][y].missing = true; ok = true; }
-      else if (--timeout < 0) { console.log("Error setting up puzzle"); return; }
-    } while (!ok);
+function setMissingPieces(list) {
+  if (list !== undefined) {
+    setMissing(list.length);
+    for (let i=0;i<list.length;i++) {
+      puzzle[list[i].file][list[i].rank].missing = true;
+    }
+  }
+  else {
+    let timeout = 999;
+    for (let i=0;i<missing;i++) {
+      let ok = false; do {
+        let x = seedy_rnd(ZugBoard.MAX_FILES), y = seedy_rnd(ZugBoard.MAX_RANKS);
+        if (puzzle[x][y].piece !== 0 && !puzzle[x][y].missing) { puzzle[x][y].missing = true; ok = true; }
+        else if (--timeout < 0) { console.log("Error setting up puzzle"); return; }
+      } while (!ok);
+    }
   }
 }
 
 function winCheck() { //console.log("Checking for winner...");
   for (let y=0; y<ZugBoard.MAX_RANKS; y++) for (let x=0; x<ZugBoard.MAX_FILES; x++) {
-    if (solution_board.squares[x][y].piece !== puzzle[x][y].piece) return false;
+    if (solution_board.squares[x][y].piece !== puzzle[x][y].piece) {
+      if (tutorial_lvl >= 0) runTutorial();
+      return false;
+    }
   } //console.log("Winner! " + missing);
   win_sounds[missing-1].play();
   if (playing) {
@@ -198,9 +248,14 @@ function winCheck() { //console.log("Checking for winner...");
     txt_score.textContent = "Score: " + score;
     animation_start = Date.now(); victoryAnimation();
   }
+  else if (tutorial_lvl >= 0) {
+    //animation_start = Date.now(); victoryAnimation();
+    runTutorial(tutorial_lvl + 1);
+  }
   return true;
 }
 
+//TODO: make async
 function victoryAnimation() {
   if (Date.now() - animation_start < animation_time) {
     solution_board.colorCycle();
@@ -212,6 +267,16 @@ function victoryAnimation() {
 function setInterpolation() {
   solution_board.interpolated = document.getElementById("chk-lerp").checked;
   solution_board.initPieceBox(refresh,winCheck);
+}
+
+function runTutorial(lvl) {
+  if (lvl !== undefined) {
+    tutorial_lvl = lvl;
+    showTutorial(tutorial_content[tutorial_lvl].txt);
+  }
+  else showTutorial(tutorial_content[tutorial_lvl].err);
+  newFEN(tutorial_content[tutorial_lvl].fen,tutorial_content[tutorial_lvl].missing);
+  if (tutorial_lvl >= tutorial_content.length-1) tutorial_lvl = -1;
 }
 
 function startScrolling() {
@@ -269,4 +334,6 @@ function mulberry32(a) {
   }
 }
 
-function rnd(n) { return Math.floor(rnd_fun() * n); }
+function seedy_rnd(n) { return Math.floor(rnd_fun() * n); }
+function rnd(n) { return Math.floor(Math.random() * n); }
+

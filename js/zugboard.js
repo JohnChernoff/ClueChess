@@ -22,6 +22,7 @@ class ZugBoard {
   static MAX_FILES = 8;
   static MAX_RANKS = 8;
 
+  editable = true;
   interpolated = true;
   img_light_sqr;
   img_dark_sqr;
@@ -113,27 +114,42 @@ class ZugBoard {
         let shade = ((file + rank) % 2) === 0 ? ZugBoard.LIGHT : ZugBoard.DARK;
         this.squares[file][rank] = new Square(0,shade,can);
         can.addEventListener("dragstart", ev => {  //console.log("Drag start: " + ev.target.id);
-          let coord = ZugBoard.getCoords(ev.target.id); this.dragging = { from: this.squares[coord.x][coord.y], to: null };
+          if (this.editable) {
+            let coord = ZugBoard.getCoords(ev.target.id);
+            this.dragging = { from: this.squares[coord.x][coord.y], to: null };
+          }
         })
         can.addEventListener("dragenter", ev => {
-          let coord = ZugBoard.getCoords(ev.target.id); this.dragging.to = this.squares[coord.x][coord.y]; //TODO: bug?
+          if (this.editable) {
+            let coord = ZugBoard.getCoords(ev.target.id);
+            this.dragging.to = this.squares[coord.x][coord.y]; //TODO: bug?
+          }
         });
         can.addEventListener("dragend", ev => {
-          let rect = wrapper.getBoundingClientRect();
-          if (ZugBoard.inBounds(ev.pageX,ev.pageY,rect)) this.dragging.to.piece = this.dragging.from.piece;
-          this.dragging.from.piece = 0; this.dragging = null;
-          this.drawGridBoard(); click_fun();
+          if (this.editable) {
+            let rect = wrapper.getBoundingClientRect();
+            if (ZugBoard.inBounds(ev.pageX,ev.pageY,rect)) this.dragging.to.piece = this.dragging.from.piece;
+            this.dragging.from.piece = 0; this.dragging = null;
+            this.drawGridBoard();
+            click_fun();
+          }
         });
         can.addEventListener("click", ev => {
-          let coord = ZugBoard.getCoords(ev.target.id); this.scrollPiece(this.squares[coord.x][coord.y],1); click_fun();
+          if (this.editable) {
+            let coord = ZugBoard.getCoords(ev.target.id);
+            this.scrollPiece(this.squares[coord.x][coord.y],1);
+            click_fun();
+          }
         });
         can.addEventListener("contextmenu",ev => {
-          let coord = ZugBoard.getCoords(ev.target.id);
-          this.selected_square = this.squares[coord.x][coord.y];
-          this.piece_wrapper.style.left = ev.pageX + "px";
-          this.piece_wrapper.style.top = ev.pageY + "px";
-          this.piece_wrapper.style.display = "block";
-          ev.preventDefault();
+          if (this.editable) {
+            let coord = ZugBoard.getCoords(ev.target.id);
+            this.selected_square = this.squares[coord.x][coord.y];
+            this.piece_wrapper.style.left = ev.pageX + "px";
+            this.piece_wrapper.style.top = ev.pageY + "px";
+            this.piece_wrapper.style.display = "block";
+            ev.preventDefault();
+          }
         });
       }
     }
