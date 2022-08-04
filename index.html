@@ -47,15 +47,13 @@
   </div>
 
   <div id="main">
-    <button onclick="newPuzzle()" id = "butt-new">New</button>
-    <button onclick="startGame()" id = "butt-start">Start</button>
-    <button onclick="showHelp()" id = "butt-help">Help</button>
-    <button onclick="runTutorial(0)" id = "butt-tut">Tutorial</button>
-    <button onclick="resetSolutionBoard()" id = "butt-reset">Reset</button>
-    <button onclick="showAbout()" id = "butt-about">About</button>
-    <div id="options">
-      <label hidden for="chk-verbose">Verbose: </label>
-      <input hidden type="checkbox" id="chk-verbose" onchange="refresh()">
+    <button class="main-act" onclick="newPuzzle()" id = "butt-new">New</button>
+    <button class="main-act" onclick="startGame()" id = "butt-start">Start</button>
+    <button class="main-act" onclick="showHelp()" id = "butt-help">Help</button>
+    <button class="main-act" onclick="runTutorial(0)" id = "butt-tut">Tutorial</button>
+    <button class="main-act" onclick="resetSolutionBoard()" id = "butt-reset">Reset</button>
+    <button class="main-act" onclick="showAbout()" id = "butt-about">About</button>
+    <div class="main-opt" id="options">
       <label for="chk-lerp">Interpolated Board: </label>
       <input type="checkbox" id="chk-lerp" checked=true onchange="setInterpolation()">
       <label id="lab_missing" for="range-missing">Missing Pieces: </label>
