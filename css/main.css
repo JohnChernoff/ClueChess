@@ -29,6 +29,86 @@ body {
   animation-fill-mode: forwards;
 }
 
+#main {
+  width: 90vmin;
+  height: 90vmin;
+  background-color: rgba(38, 63, 63, 0.5);
+  margin: 5vh auto auto auto; /* auto; */
+  position: relative;
+}
+
+#solution {
+  background-color: #888888;
+  margin: 0;
+  position: absolute;
+  top: 50%; left: 50%;
+  -ms-transform: translate(-50%, -50%); transform: translate(-50%, -50%);
+}
+
+@media (min-aspect-ratio: 1/1) {
+  #solution {
+    width: 80vmin; height: 80vmin;
+  }
+
+  #sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 120px;
+  }
+
+  #butt-reset {
+    position: absolute;
+    left: 0%; bottom: 0%;
+  }
+
+  #butt-about {
+    position: absolute;
+    right: 0%; bottom: 0%;
+  }
+
+}
+
+@media (max-aspect-ratio: 1/1) {
+
+  #solution {
+    width: 90vmin; height: 90vmin;
+  }
+
+  #sidebar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    width: 120px;
+  }
+
+  .main-act {
+    visibility: hidden;
+  }
+}
+
+
+.chess-grid {
+  display: grid;
+  grid-template-columns: repeat(8,1fr);
+  grid-template-rows: repeat(8,1fr);
+  grid-gap: 2px;
+  padding: 2px;
+}
+
+.chess-grid > div > canvas {
+  cursor: move;
+}
+
+button {
+  background: darkslategray;
+  color: cyan; /* #00CC88; */
+}
+
+button:hover {
+  color: #00CC88;
+}
+
 #splash {
   background-image: url("../img/cluechess_splash.png");
   background-position: center;
@@ -55,13 +135,7 @@ a {
   color: lightseagreen;
 }
 
-#main {
-  width: 90vh;
-  height: 90vh;
-  background-color: rgba(38, 63, 63, 0.5);
-  margin: 5vh auto auto auto; /* auto; */
-  position: relative;
-}
+
 
 .piece-choice {
   width: 24px;
@@ -85,27 +159,6 @@ a {
   height: 50px;
 }
 
-.chess-grid {
-  display: grid;
-  grid-template-columns: repeat(8,1fr);
-  grid-template-rows: repeat(8,1fr);
-  grid-gap: 2px;
-  padding: 2px;
-}
-
-.chess-grid > div > canvas {
-  cursor: move;
-}
-
-#solution {
-  width: 80vh; height: 80vh;
-  background-color: #888888;
-  margin: 0;
-  position: absolute;
-  top: 50%; left: 50%;
-  -ms-transform: translate(-50%, -50%); transform: translate(-50%, -50%);
-}
-
 #actions {
   float: left;
 }
@@ -115,30 +168,7 @@ a {
   color: black;
 }
 
-button:hover {
-  color: #00CC88;
-}
-button {
-  background: darkslategray;
-  color: cyan; /* #00CC88; */
-}
 
-#butt-reset {
-  position: absolute;
-  left: 0%; bottom: 0%;
-}
-
-#butt-about {
-  position: absolute;
-  right: 0%; bottom: 0%;
-}
-
-#sidebar {
-  position: fixed;
-  top: 0;
-  width: 120px;
-  float: left;
-}
 
 .status-box {
   display: inline-block;

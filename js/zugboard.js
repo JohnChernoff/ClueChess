@@ -32,6 +32,7 @@ class ZugBoard {
   piece_imgs = [];
   pieces_loaded = 0;
   selected_square;
+  verbose = false;
   show_control = true;
   squares = [];
 
@@ -43,7 +44,7 @@ class ZugBoard {
     this.img_dark_sqr = new Image(); this.img_dark_sqr.src = "img/dark_square2.jpg";
   }
 
-  fetchPNGPiece(color,i,img,load_fun,choose_fun) {
+  fetchPiece(color,i,img,style,type,load_fun,choose_fun) {
     let id = color + i; let p = color === "w" ? i : -i;
     img.onload = () => {
       console.log("Loaded: " + id + ", " + this.pieces_loaded);
@@ -51,36 +52,15 @@ class ZugBoard {
     }
     img.addEventListener("click", () => { this.choosePiece(p,choose_fun); });
     img.classList.add("piece-choice");
-    img.src = "img/pieces/zug/" + id + ".png";
-  }
-
-  fetchSVGPiece(color,i,img,load_fun,choose_fun) {
-    let id = color + i; let p = color === "w" ? i : -i;
-    fetch("img/pieces/svg/" + id +  ".svg", {cache: "reload"}).then(response => response.text()).then(text => {
-      let svg = document.createElement("template");
-      svg.innerHTML = text; let e = svg.content.getElementById(id); //console.log(id + " -> " + text + " -> " + e);
-      //e.getElementById("layer1").style = color === "w" ? "fill:#ffffff" : "fill:#000000";
-      e.getElementById("layer1").style = color === "w" ? "fill:#00ffff" : "fill:#00CC88"; //"fill:#00AA88"; //"fill:#FFFFFF" : "fill:#000000"; "fill:#44FFAA"
-      let xml = (new XMLSerializer).serializeToString(e);
-      img.src = "data:image/svg+xml;charset=utf-8,"+xml;
-      img.addEventListener("click", () => { this.choosePiece(p,choose_fun); });
-      img.classList.add("piece-choice");
-      if (++this.pieces_loaded >= 12) load_fun();
-    });
+    img.src = "img/pieces/" + style + "/" + id + type;
   }
 
   initPieceBox(load_fun,choose_fun) {
     this.pieces_loaded = 0;
     for (let i=0;i<6;i++) {
       this.piece_imgs[i] = { black: new Image(), white: new Image() };
-      if (this.interpolated) {
-        this.fetchSVGPiece("b",i+1,this.piece_imgs[i].black,load_fun,choose_fun);
-        this.fetchSVGPiece("w",i+1,this.piece_imgs[i].white,load_fun,choose_fun);
-      }
-      else {
-        this.fetchPNGPiece("b",i+1,this.piece_imgs[i].black,load_fun,choose_fun);
-        this.fetchPNGPiece("w",i+1,this.piece_imgs[i].white,load_fun,choose_fun);
-      }
+      this.fetchPiece("b",i+1,this.piece_imgs[i].black,"svg",".svg",load_fun,choose_fun);
+      this.fetchPiece("w",i+1,this.piece_imgs[i].white,"svg",".svg",load_fun,choose_fun);
     }
     let box = document.getElementById("piece-box");
     while (box.firstChild) {
@@ -193,7 +173,7 @@ class ZugBoard {
         let corner_width = (this.squares[x][y].canvas.width/6);
         this.squares[x][y].ctx.font = 'bold ' + corner_width + 'px fixedsys';
         if (this.squares[x][y].control !== puzzle_squares[x][y].control) {
-          if (chk_verbose.checked) {
+          if (this.verbose) {
             this.squares[x][y].ctx.fillStyle = "red";
             this.squares[x][y].ctx.fillText(this.squares[x][y].control,8,corner_width);
           }
