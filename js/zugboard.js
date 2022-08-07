@@ -44,23 +44,18 @@ class ZugBoard {
     this.img_dark_sqr = new Image(); this.img_dark_sqr.src = "img/dark_square2.jpg";
   }
 
-  fetchPiece(color,i,img,style,type,load_fun,choose_fun) {
-    let id = color + i; let p = color === "w" ? i : -i;
-    img.onload = () => {
-      console.log("Loaded: " + id + ", " + this.pieces_loaded);
-      if (++this.pieces_loaded >= 12) load_fun();
-    }
-    img.addEventListener("click", () => { this.choosePiece(p,choose_fun); });
-    img.classList.add("piece-choice");
-    img.src = "img/pieces/" + style + "/" + id + type;
-  }
-
   initPieceBox(load_fun,choose_fun) {
     this.pieces_loaded = 0;
     for (let i=0;i<6;i++) {
       this.piece_imgs[i] = { black: new Image(), white: new Image() };
-      this.fetchPiece("b",i+1,this.piece_imgs[i].black,"svg",".svg",load_fun,choose_fun);
-      this.fetchPiece("w",i+1,this.piece_imgs[i].white,"svg",".svg",load_fun,choose_fun);
+      if (this.interpolated) {
+        this.fetchPiece("b",i+1,this.piece_imgs[i].black,"svg",".svg",load_fun,choose_fun);
+        this.fetchPiece("w",i+1,this.piece_imgs[i].white,"svg",".svg",load_fun,choose_fun);
+      }
+      else {
+        this.fetchPiece("b",i+1,this.piece_imgs[i].black,"zug",".png",load_fun,choose_fun);
+        this.fetchPiece("w",i+1,this.piece_imgs[i].white,"zug",".png",load_fun,choose_fun);
+      }
     }
     let box = document.getElementById("piece-box");
     while (box.firstChild) {
@@ -76,6 +71,31 @@ class ZugBoard {
     cancel_square_img.classList.add("piece-choice");
     cancel_square_img.addEventListener("click",() => { this.choosePiece(undefined,choose_fun); });
     box.appendChild(cancel_square_img);
+  }
+
+  fetchPiece(color,i,img,style,type,load_fun,choose_fun) {
+    let id = color + i; let p = color === "w" ? i : -i;
+    img.onload = () => {
+      console.log("Loaded: " + id + ", " + this.pieces_loaded);
+      if (++this.pieces_loaded >= 12) load_fun();
+    }
+    img.addEventListener("click", () => { this.choosePiece(p,choose_fun); });
+    img.classList.add("piece-choice");
+    img.src = "img/pieces/" + style + "/" + id + type;
+  }
+
+  choosePiece(p,choose_fun) {
+    this.piece_wrapper.style.display = "none";
+    if (p !== undefined) {
+      this.selected_square.piece = p; refresh(); choose_fun();
+    }
+  }
+
+  scrollPiece(square,dir) {
+    square.piece += dir;
+    if (square.piece > KING) square.piece = -KING;
+    else if (square.piece < -KING) square.piece = KING;
+    this.drawGridBoard();
   }
 
   initGridBoard(wrapper,click_fun) {
@@ -135,20 +155,6 @@ class ZugBoard {
     }
   }
 
-  choosePiece(p,choose_fun) {
-    this.piece_wrapper.style.display = "none";
-    if (p !== undefined) {
-      this.selected_square.piece = p; refresh(); choose_fun();
-    }
-  }
-
-  scrollPiece(square,dir) {
-    square.piece += dir;
-    if (square.piece > KING) square.piece = -KING;
-    else if (square.piece < -KING) square.piece = KING;
-    this.drawGridBoard();
-  }
-
   drawGridBoard() {
     ZugBoard.calcBoard(this.squares);
     if (this.interpolated) this.drawInterpolatedSquares(); else this.drawSquares();
@@ -157,13 +163,12 @@ class ZugBoard {
   }
 
   drawGridPiece(square) { //console.log(square);
-    let scale = this.interpolated ? .5 : .75;
+    let scale = this.interpolated ? .5 : .66;
     if (!square.missing && square.piece !== 0) {
-      //let w2 = square.canvas.width/2, w4 = square.canvas.width/4, h2 = square.canvas.height/2, h4 = square.canvas.height/3;
       let x = square.canvas.width * ((1-scale)/2); let y = square.canvas.width * ((1-scale)/2);
       let w = square.canvas.width * scale;
-      if (square.piece > 0) square.ctx.drawImage(this.piece_imgs[square.piece-1].white,x,y,w,w); //w4,h4,w2,h2);
-      else square.ctx.drawImage(this.piece_imgs[-square.piece-1].black,x,y,w,w,); //w4,h4,w2,h2);
+      if (square.piece > 0) square.ctx.drawImage(this.piece_imgs[square.piece-1].white,x,y,w,w);
+      else square.ctx.drawImage(this.piece_imgs[-square.piece-1].black,x,y,w,w,);
     }
   }
 
@@ -181,10 +186,7 @@ class ZugBoard {
             this.squares[x][y].ctx.fillStyle = "darkgrey";
           }
           else {
-            let rect_dim = corner_width * 1.5;
-            this.squares[x][y].ctx.fillStyle = "#000000";
-            this.squares[x][y].ctx.fillRect(this.squares[x][y].canvas.width - rect_dim,0,rect_dim,rect_dim);
-            this.squares[x][y].ctx.fillStyle = "#DD5555";
+            this.squares[x][y].ctx.fillStyle = "black";
           }
           this.squares[x][y].ctx.fillText(puzzle_squares[x][y].control,this.squares[x][y].canvas.width-corner_width,corner_width);
         }
